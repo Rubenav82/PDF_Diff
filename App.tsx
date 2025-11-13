@@ -139,7 +139,7 @@ export default function App() {
                 <span>Comenzar Nueva Comparación</span>
               </button>
             )}
-            <img className="h-16 w-16" alt="Izertis" id="logoIzertis" loading="lazy" src="public/img/izertis-logo-1200x630.jpg"/>
+            <img className="h-10 w-17" alt="Izertis" id="logoIzertis" loading="lazy" src="https://hcmex-prod.s3.eu-west-1.amazonaws.com/uploads/15574882/people/company_logos/login/thumb/logo_147x32px_1.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3IM3S74A6HKMFP4R%2F20251113%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Date=20251113T113057Z&X-Amz-Expires=300&X-Amz-SignedHeaders=host&X-Amz-Signature=735e3bde0dbf538e51653875420a7343be78348d98143fd50bf6f9a62c1a04e4"/>
           </div>
         </div>
       </header>
