@@ -10,6 +10,10 @@ interface VisualDiffViewProps {
   pageMapping: PageMapping;
 }
 
+interface RenderTaskCancellable {
+    cancel: () => void;
+}
+
 export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, modifiedFile, pageMapping }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +23,8 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
   const originalCanvasRef = useRef<HTMLCanvasElement>(null);
   const modifiedCanvasRef = useRef<HTMLCanvasElement>(null);
   const diffCanvasRef = useRef<HTMLCanvasElement>(null);
-  
+  const activeRenderTasks = useRef<RenderTaskCancellable[]>([]);
+
   const currentMapEntry = pageMapping[currentIndex];
 
   const drawDiff = useCallback(async (originalPageNum: number, modifiedPageNum: number) => {
@@ -36,21 +41,29 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
     // Limpiar lienzos previos
     const canvases = [originalCanvas, modifiedCanvas, diffCanvas];
     canvases.forEach(c => {
-        c.getContext('2d')?.clearRect(0, 0, c.width, c.height);
+        const ctx = c.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, c.width, c.height);
+        }
         c.width = 1; // Restablecer para evitar mostrar imagen anterior
         c.height = 1;
     });
 
     try {
-      await Promise.all([
-        renderPageToCanvas(originalFile, originalPageNum, originalCanvas),
-        renderPageToCanvas(modifiedFile, modifiedPageNum, modifiedCanvas),
-      ]);
+        const originalRender = renderPageToCanvas(originalFile, originalPageNum, originalCanvas);
+        const modifiedRender = renderPageToCanvas(modifiedFile, modifiedPageNum, modifiedCanvas);
+        
+        activeRenderTasks.current.push(originalRender, modifiedRender);
+
+        await Promise.all([
+            originalRender.promise,
+            modifiedRender.promise,
+        ]);
       
       const width = Math.max(originalCanvas.width, modifiedCanvas.width);
       const height = Math.max(originalCanvas.height, modifiedCanvas.height);
 
-      if (width === 0 || height === 0) {
+      if (width <= 1 || height <= 1) { // width/height pueden ser 1 por el reseteo
         setDiffPixels(0);
         return;
       }
@@ -93,8 +106,10 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
       setDiffPixels(numDiffPixels);
 
     } catch (err: any) {
-      setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
-      console.error(err);
+        if (err.name !== 'RenderingCancelledException') {
+            setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
+            console.error(err);
+        }
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +119,12 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
     if (currentMapEntry) {
         drawDiff(currentMapEntry.originalPage, currentMapEntry.modifiedPage);
     }
+    
+    // Función de limpieza para cancelar renderizados en curso
+    return () => {
+        activeRenderTasks.current.forEach(task => task.cancel());
+        activeRenderTasks.current = [];
+    };
   }, [currentMapEntry, drawDiff]);
   
   if (pageMapping.length === 0) {

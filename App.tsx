@@ -139,7 +139,7 @@ export default function App() {
                 <span>Comenzar Nueva Comparación</span>
               </button>
             )}
-            <img className="h-10 w-10" alt="Izertis" id="logoIzertis" loading="lazy" src="https://www.izertis.com/o/portal-izertis-theme/images/new/izertis.svg"/>
+            <img className="h-16 w-16" alt="Izertis" id="logoIzertis" loading="lazy" src="public/img/izertis-logo-1200x630.jpg"/>
           </div>
         </div>
       </header>

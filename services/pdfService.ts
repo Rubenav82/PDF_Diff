@@ -67,66 +67,89 @@ export async function extractTextFromPdf(file: File): Promise<string[]> {
   });
 }
 
+interface RenderTask {
+  promise: Promise<{ width: number; height: number; }>;
+  cancel: () => void;
+}
+
 /**
  * Renders a specific page of a PDF to a given canvas element.
  * @param file The PDF file.
  * @param pageNum The 1-based page number to render.
  * @param canvas The canvas element to draw on.
- * @returns A promise that resolves with the viewport dimensions when rendering is complete.
+ * @returns An object with a promise that resolves when rendering is complete and a function to cancel it.
  */
-export async function renderPageToCanvas(
+export function renderPageToCanvas(
   file: File,
   pageNum: number,
   canvas: HTMLCanvasElement
-): Promise<{ width: number, height: number }> {
-    const fileReader = new FileReader();
-    
-    return new Promise((resolve, reject) => {
-        fileReader.onload = async (event) => {
-            if (!event.target?.result) {
-                return reject(new Error('Error al leer el archivo.'));
-            }
-            try {
-                const loadingTask = pdfjsLib.getDocument({ data: event.target.result });
-                const pdf = await loadingTask.promise;
+): RenderTask {
+  let renderTask: any | null = null;
+  const fileReader = new FileReader();
 
-                if (pageNum < 1 || pageNum > pdf.numPages) {
-                  const ctx = canvas.getContext('2d');
-                  if (ctx) {
-                    canvas.width = 800;
-                    canvas.height = 100;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.font = "16px Arial";
-                    ctx.fillStyle = "gray";
-                    ctx.textAlign = "center";
-                    ctx.fillText(`Página ${pageNum} no existe en ese documento.`, canvas.width / 2, canvas.height / 2);
-                  }
-                  return resolve({ width: 0, height: 0});
-                }
+  const promise = new Promise<{ width: number; height: number; }>((resolve, reject) => {
+    fileReader.onload = async (event) => {
+      if (!event.target?.result) {
+        return reject(new Error('Error al leer el archivo.'));
+      }
+      try {
+        const loadingTask = pdfjsLib.getDocument({ data: event.target.result });
+        const pdf = await loadingTask.promise;
 
-                const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 1.5 });
-                
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+        if (pageNum < 1 || pageNum > pdf.numPages) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            canvas.width = 800;
+            canvas.height = 100;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "gray";
+            ctx.textAlign = "center";
+            ctx.fillText(`Página ${pageNum} no existe en ese documento.`, canvas.width / 2, canvas.height / 2);
+          }
+          return resolve({ width: 0, height: 0 });
+        }
 
-                const context = canvas.getContext('2d');
-                if (!context) {
-                    return reject(new Error('No se pudo obtener contexto del lienzo.'));
-                }
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
 
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport,
-                };
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-                await page.render(renderContext).promise;
-                resolve({ width: viewport.width, height: viewport.height });
-            } catch (error) {
-                reject(error);
-            }
+        const context = canvas.getContext('2d');
+        if (!context) {
+          return reject(new Error('No se pudo obtener contexto del lienzo.'));
+        }
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
         };
-        fileReader.onerror = (error) => reject(error);
-        fileReader.readAsArrayBuffer(file);
-    });
+
+        renderTask = page.render(renderContext);
+        await renderTask.promise;
+        resolve({ width: viewport.width, height: viewport.height });
+      } catch (error: any) {
+        // Ignorar el error de cancelación ya que es un comportamiento esperado
+        if (error.name !== 'RenderingCancelledException') {
+            reject(error);
+        }
+      }
+    };
+    fileReader.onerror = (error) => reject(error);
+    fileReader.readAsArrayBuffer(file);
+  });
+
+  return {
+    promise,
+    cancel: () => {
+      if (renderTask) {
+        renderTask.cancel();
+      }
+      // Detener la lectura del archivo si aún no ha terminado
+      if (fileReader.readyState === FileReader.LOADING) {
+        fileReader.abort();
+      }
+    },
+  };
 }
