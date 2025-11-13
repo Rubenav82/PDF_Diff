@@ -1,5 +1,5 @@
 {
   "name": "PDF Contract Diff Tool",
-  "description": "An application for legal professionals to compare two PDF documents (original and modified). It highlights text changes (additions in green, deletions in red) and provides a visual, pixel-by-pixel comparison to detect layout or design alterations.",
+  "description": "Una aplicación que nos permite comparar dos documentos PDF (original y modificado). Resalta los cambios de texto (adiciones en verde, eliminaciones en rojo) y ofrece una comparación visual, píxel por píxel, para detectar alteraciones en el diseño o la disposición.",
   "requestFramePermissions": []
 }
