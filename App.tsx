@@ -4,6 +4,7 @@ import { FileUploader } from './components/FileUploader';
 import { ComparisonView } from './components/ComparisonView';
 import { Spinner } from './components/Spinner';
 import { DocumentIcon, ArrowPathIcon } from './components/icons';
+import { Logo } from './components/Logo';
 import { getPdfPageCount, extractTextFromPdf } from './services/pdfService';
 import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types';
 import { PageMapper } from './components/PageMapper';
@@ -139,7 +140,8 @@ export default function App() {
                 <span>Comenzar Nueva Comparación</span>
               </button>
             )}
-            <img className="h-16 w-auto" alt="Izertis" id="logo_Izertis" loading="lazy" src="/public/img/izertis.png"/>
+            {/* <img className="h-16 w-auto" alt="Izertis" id="logo_Izertis" loading="eager" referrerPolicy="no-referrer" src="/public/img/izertis.png"/> */}
+            <Logo className="h-10 w-auto" />
           </div>
         </div>
       </header>
