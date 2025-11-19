@@ -1,14 +1,14 @@
-// This is required to find the worker script from the CDN.
-// It's a global variable that pdf.js looks for.
+// Esto es necesario para encontrar el worker desde el CDN.
+// Es una variable globa que busca pdf.js.
 (window as any).pdfjsWorker = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
-// Get the pdf.js global object
+// Obtener el objeto global pdf.js
 const pdfjsLib = (window as any)['pdfjs-dist/build/pdf'];
 
 /**
- * Gets the number of pages in a PDF file.
- * @param file The PDF file to process.
- * @returns A promise that resolves to the number of pages.
+ * Obtiene el número de página de un archivo PDF.
+ * @param file El archivo PDF a procesar.
+ * @returns Una promesa que resuelve en el número de páginas.
  */
 export async function getPdfPageCount(file: File): Promise<number> {
   const fileReader = new FileReader();
@@ -33,9 +33,9 @@ export async function getPdfPageCount(file: File): Promise<number> {
 
 
 /**
- * Extracts text content from each page of a PDF file.
- * @param file The PDF file to process.
- * @returns A promise that resolves to an array of strings, where each string is the text of a page.
+ * Extrae el contenido de textual de cada página de un PDF.
+ * @param file El archivo PDF a procesar.
+ * @returns Una promesa que resuelve en un array de strings, donde cada string es el texto de una página.
  */
 export async function extractTextFromPdf(file: File): Promise<string[]> {
   const fileReader = new FileReader();
@@ -73,11 +73,11 @@ interface RenderTask {
 }
 
 /**
- * Renders a specific page of a PDF to a given canvas element.
- * @param file The PDF file.
- * @param pageNum The 1-based page number to render.
- * @param canvas The canvas element to draw on.
- * @returns An object with a promise that resolves when rendering is complete and a function to cancel it.
+ * Renderiza un página específica de un PDF para obtener el elemento canvas determinado.
+ * @param file El archivo PDF.
+ * @param pageNum El número de página a renderizar.
+ * @param canvas El elemento canvas sobre el que dibujar.
+ * @returns Un objeto con una promesa que resuelve cuando el renderizado se ha completado y una función lo cancela.
  */
 export function renderPageToCanvas(
   file: File,
