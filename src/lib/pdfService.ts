@@ -1,9 +1,8 @@
-// Esto es necesario para encontrar el worker desde el CDN.
-// Es una variable globa que busca pdf.js.
-(window as any).pdfjsWorker = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
-// Obtener el objeto global pdf.js
-const pdfjsLib = (window as any)['pdfjs-dist/build/pdf'];
+// Configurar el worker localmente
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 /**
  * Obtiene el número de página de un archivo PDF.
@@ -54,7 +53,10 @@ export async function extractTextFromPdf(file: File): Promise<string[]> {
         for (let i = 1; i <= numPages; i++) {
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          // Filtrar y unir el texto de los items
+          const pageText = textContent.items
+            .map((item: any) => item.str || '')
+            .join(' ');
           pageTexts.push(pageText);
         }
         resolve(pageTexts);
@@ -126,7 +128,7 @@ export function renderPageToCanvas(
           viewport: viewport,
         };
 
-        renderTask = page.render(renderContext);
+        renderTask = page.render(renderContext as any);
         await renderTask.promise;
         resolve({ width: viewport.width, height: viewport.height });
       } catch (error: any) {

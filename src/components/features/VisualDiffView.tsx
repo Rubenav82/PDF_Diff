@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import pixelmatch from 'pixelmatch';
-import { renderPageToCanvas } from '../services/pdfService';
-import { Spinner } from './Spinner';
-import type { PageMapping } from '../types';
+import { renderPageToCanvas } from '../../lib/pdfService';
+import { Spinner } from '../ui/Spinner';
+import type { PageMapping } from '../../types/types';
 
 interface VisualDiffViewProps {
   originalFile: File;
