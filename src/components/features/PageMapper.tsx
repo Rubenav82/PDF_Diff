@@ -1,6 +1,6 @@
 import React from 'react';
-import type { PageMapping } from '../types';
-import { ArrowRightIcon } from './icons';
+import type { PageMapping } from '../../types/types';
+import { ArrowRightIcon } from '../ui/icons';
 
 interface PageMapperProps {
   pageCounts: { original: number; modified: number };

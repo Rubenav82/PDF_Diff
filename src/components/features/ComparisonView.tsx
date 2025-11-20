@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextDiffView } from './TextDiffView';
 import { VisualDiffView } from './VisualDiffView';
-import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from '../types';
+import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from '../../types/types';
 
 interface ComparisonViewProps {
   textDiff: TextDiffResult[] | null;

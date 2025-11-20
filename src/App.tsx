@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { diffChars } from 'diff';
-import { FileUploader } from './components/FileUploader';
-import { ComparisonView } from './components/ComparisonView';
-import { Spinner } from './components/Spinner';
-import { DocumentIcon, ArrowPathIcon } from './components/icons';
-import { Logo } from './components/Logo';
-import { getPdfPageCount, extractTextFromPdf } from './services/pdfService';
-import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types';
-import { PageMapper } from './components/PageMapper';
+import { FileUploader } from './components/ui/FileUploader';
+import { ComparisonView } from './components/features/ComparisonView';
+import { Spinner } from './components/ui/Spinner';
+import { DocumentIcon, ArrowPathIcon } from './components/ui/icons';
+import { Logo } from './components/ui/Logo';
+import { getPdfPageCount, extractTextFromPdf } from './lib/pdfService';
+import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types/types';
+import { PageMapper } from './components/features/PageMapper';
 
 export default function App() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);

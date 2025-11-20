@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TextDiffResult } from '../types';
+import type { TextDiffResult } from '../../types/types';
 
 interface TextDiffViewProps {
   diffResults: TextDiffResult[] | null;
