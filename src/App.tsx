@@ -140,8 +140,9 @@ export default function App() {
                 <span>Comenzar Nueva Comparación</span>
               </button>
             )}
-            {/* <img className="h-16 w-auto" alt="Izertis" id="logo_Izertis" loading="eager" referrerPolicy="no-referrer" src="/public/img/izertis.png"/> */}
-            <Logo className="h-10 w-auto" />
+            <a href="https://www.izertis.com/es/" target='_blank'>
+              <Logo className="h-10 w-auto" />
+            </a>
           </div>
         </div>
       </header>
