@@ -5,7 +5,7 @@ import { ComparisonView } from './components/features/ComparisonView';
 import { Spinner } from './components/ui/Spinner';
 import { DocumentIcon, ArrowPathIcon } from './components/ui/icons';
 import { Logo } from './components/ui/Logo';
-import { getPdfPageCount, extractTextFromPdf } from './lib/pdfService';
+import { getPdfPageCount, extractTextFromPdf, calculateFileHash } from './lib/pdfService';
 import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types/types';
 import { PageMapper } from './components/features/PageMapper';
 
@@ -15,31 +15,40 @@ export default function App() {
   const [textDiff, setTextDiff] = useState<TextDiffResult[] | null>(null);
   const [visualDiff, setVisualDiff] = useState<VisualDiffResult | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isHashing, setIsHashing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('text');
 
+  const [hashes, setHashes] = useState<{ original: string | null; modified: string | null }>({ original: null, modified: null });
   const [pageCounts, setPageCounts] = useState<{ original: number; modified: number } | null>(null);
   const [pageMapping, setPageMapping] = useState<PageMapping | null>(null);
 
+  // Efecto para obtener conteo de páginas y hashes
   useEffect(() => {
     if (originalFile && modifiedFile) {
-      const fetchCounts = async () => {
+      const processFiles = async () => {
+        setIsHashing(true);
         try {
-          // No mostrar el spinner principal para esta carga inicial de conteo
-          const [original, modified] = await Promise.all([
+          const [originalCount, modifiedCount, hOriginal, hModified] = await Promise.all([
             getPdfPageCount(originalFile),
             getPdfPageCount(modifiedFile),
+            calculateFileHash(originalFile),
+            calculateFileHash(modifiedFile)
           ]);
-          setPageCounts({ original, modified });
+          setPageCounts({ original: originalCount, modified: modifiedCount });
+          setHashes({ original: hOriginal, modified: hModified });
           setError(null);
         } catch (err) {
-          setError('No se pudo leer el número de páginas de uno de los PDF.');
+          setError('No se pudieron procesar los archivos para la comprobación inicial.');
           console.error(err);
+        } finally {
+          setIsHashing(false);
         }
       };
-      fetchCounts();
+      processFiles();
     } else {
       setPageCounts(null);
+      setHashes({ original: null, modified: null });
     }
   }, [originalFile, modifiedFile]);
 
@@ -47,11 +56,9 @@ export default function App() {
     if (pageCounts) {
       const defaultMapping: PageMapping = [];
       for (let i = 1; i <= pageCounts.original; i++) {
-        // Mapeo 1 a 1 por defecto donde sea posible
         if (i <= pageCounts.modified) {
           defaultMapping.push({ originalPage: i, modifiedPage: i });
         } else {
-          // La página original no tiene una página modificada correspondiente (eliminada)
           defaultMapping.push({ originalPage: i, modifiedPage: 0 });
         }
       }
@@ -82,14 +89,12 @@ export default function App() {
       const diffResults: TextDiffResult[] = [];
 
       for (const mapping of pageMapping) {
-        // Solo comparar si hay una página modificada válida asignada
         if (mapping.modifiedPage > 0 && mapping.modifiedPage <= modifiedPages.length) {
           const originalText = originalPages[mapping.originalPage - 1] || '';
           const modifiedText = modifiedPages[mapping.modifiedPage - 1] || '';
           
           if (originalText !== modifiedText) {
             const pageDiff = diffChars(originalText, modifiedText);
-            // La 'página' en el resultado se refiere a la página del documento original
             diffResults.push({ page: mapping.originalPage, diff: pageDiff });
           }
         }
@@ -116,11 +121,14 @@ export default function App() {
     setVisualDiff(null);
     setError(null);
     setIsLoading(false);
+    setIsHashing(false);
     setPageCounts(null);
     setPageMapping(null);
+    setHashes({ original: null, modified: null });
   };
 
   const hasResults = textDiff !== null || visualDiff !== null;
+  const filesAreIdentical = !!(hashes.original && hashes.modified && hashes.original === hashes.modified);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 antialiased">
@@ -169,7 +177,34 @@ export default function App() {
               />
             </div>
             
-            {pageMapping && pageCounts && (
+            {isHashing && (
+              <div className="flex items-center justify-center p-4 mb-4 bg-indigo-50 rounded-lg text-indigo-700">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-700 mr-3"></div>
+                <span className="text-sm font-medium">Calculando firmas digitales (SHA-512)...</span>
+              </div>
+            )}
+
+            {filesAreIdentical && !isHashing && (
+              <div className="p-4 mb-6 bg-amber-50 border-l-4 border-amber-400 rounded-r-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-amber-700 font-semibold">
+                      Los documentos son idénticos.
+                    </p>
+                    <p className="text-sm text-amber-600">
+                      Las firmas digitales coinciden exactamente. No hay cambios que comparar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {pageMapping && pageCounts && !filesAreIdentical && (
               <PageMapper
                 pageCounts={pageCounts}
                 mapping={pageMapping}
@@ -178,13 +213,14 @@ export default function App() {
             )}
 
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+            
             <div className="text-center">
               <button
                 onClick={handleCompare}
-                disabled={!originalFile || !modifiedFile || isLoading || !pageMapping}
-                className="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105"
+                disabled={!originalFile || !modifiedFile || isLoading || isHashing || !pageMapping || filesAreIdentical}
+                className="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105"
               >
-                {isLoading ? 'Comparando...' : 'Comparar Documentos'}
+                {isLoading ? 'Comparando...' : isHashing ? 'Verificando...' : 'Comparar Documentos'}
               </button>
             </div>
           </div>
