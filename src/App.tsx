@@ -158,7 +158,7 @@ export default function App() {
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         {!hasResults && !isLoading && (
           <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-center mb-2">Comparar 2 Documentos PDF</h2>
+            <h2 className="text-2xl font-semibold text-center mb-2">PDF Comparison Tool</h2>
             <p className="text-center text-gray-600 mb-8">
               Carga una versión original y una modificada de tu PDF para ver una comparación detallada de los cambios en el texto y el diseño.
             </p>
