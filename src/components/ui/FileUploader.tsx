@@ -2,10 +2,6 @@ import React, { useCallback, useState, useRef } from 'react';
 import { DocumentArrowUpIcon, CheckCircleIcon, TrashIcon } from './icons';
 
 // Configuración del tamaño máximo (en MB)
-const MAX_SIZE_MB = 10;
-const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-
-// Configuración del tamaño máximo (en MB)
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
