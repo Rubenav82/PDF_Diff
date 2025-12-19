@@ -5,6 +5,19 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 /**
+ * Calcula el hash SHA-512 de un archivo para verificar integridad.
+ * @param file El archivo a hashear.
+ * @returns Una promesa que resuelve en el hash hexadecimal.
+ */
+export async function calculateFileHash(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-512', arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+/**
  * Obtiene el número de página de un archivo PDF.
  * @param file El archivo PDF a procesar.
  * @returns Una promesa que resuelve en el número de páginas.
