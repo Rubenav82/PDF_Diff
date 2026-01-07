@@ -4,7 +4,7 @@ import { FileUploader } from './components/ui/FileUploader';
 import { ComparisonView } from './components/features/ComparisonView';
 import { Spinner } from './components/ui/Spinner';
 import { DocumentIcon, ArrowPathIcon } from './components/ui/icons';
-import { Logo } from './components/ui/Logo';
+import { LogoIzertis, LogoAbanca } from './components/ui/Logo';
 import { getPdfPageCount, extractTextFromPdf, calculateFileHash } from './lib/pdfService';
 import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types/types';
 import { PageMapper } from './components/features/PageMapper';
@@ -134,10 +134,16 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 text-gray-800 antialiased">
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <DocumentIcon className="h-8 w-8 text-indigo-600" />
-              <h1 className="text-xl font-bold text-gray-900">PDF Diferencias Documentos</h1>
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center space-x-4">
+              <a href="https://www.abanca.com/es/" target='_blank' rel="noopener noreferrer" className="flex items-center">
+                <LogoAbanca className="h-8 w-auto" />
+              </a>
+              <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
+              <div className="flex items-center space-x-2">
+                <DocumentIcon className="h-7 w-7 text-indigo-600" />
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">PDF Diferencias Documentos</h1>
+              </div>
             </div>
             {hasResults && (
               <button
@@ -149,7 +155,7 @@ export default function App() {
               </button>
             )}
             <a href="https://www.izertis.com/es/" target='_blank'>
-              <Logo className="h-10 w-auto" />
+              <LogoIzertis className="h-10 w-auto" />
             </a>
           </div>
         </div>
