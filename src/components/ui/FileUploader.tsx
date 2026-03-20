@@ -17,14 +17,14 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateAndSetFile = (selectedFile: File) => {
+  const validateAndSetFile = useCallback((selectedFile: File) => {
     if (selectedFile.size > MAX_SIZE_BYTES) {
       setErrorMessage(`El archivo supera el límite de ${MAX_SIZE_MB}MB.`);
       return;
     }
     setErrorMessage(null);
     onFileSelect(selectedFile);
-  };
+  }, [onFileSelect]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -49,7 +49,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndSetFile(e.dataTransfer.files[0]);
     }
-  }, [onFileSelect]);
+  }, [validateAndSetFile]);
 
   const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();

@@ -67,8 +67,8 @@ export async function extractTextFromPdf(file: File): Promise<string[]> {
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           // Filtrar y unir el texto de los items
-          const pageText = textContent.items
-            .map((item: any) => item.str || '')
+          const pageText = (textContent.items as { str?: string }[])
+            .map((item) => item.str || '')
             .join(' ');
           pageTexts.push(pageText);
         }
@@ -99,7 +99,7 @@ export function renderPageToCanvas(
   pageNum: number,
   canvas: HTMLCanvasElement
 ): RenderTask {
-  let renderTask: any | null = null;
+  let renderTask: { promise: Promise<void>; cancel: () => void } | null = null;
   const fileReader = new FileReader();
 
   const promise = new Promise<{ width: number; height: number; }>((resolve, reject) => {
@@ -141,12 +141,12 @@ export function renderPageToCanvas(
           viewport: viewport,
         };
 
-        renderTask = page.render(renderContext as any);
+        renderTask = page.render(renderContext);
         await renderTask.promise;
         resolve({ width: viewport.width, height: viewport.height });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Ignorar el error de cancelación ya que es un comportamiento esperado
-        if (error.name !== 'RenderingCancelledException') {
+        if (error instanceof Error && error.name !== 'RenderingCancelledException') {
             reject(error);
         }
       }

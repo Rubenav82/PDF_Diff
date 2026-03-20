@@ -105,8 +105,8 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
       diffCtx.putImageData(diffImageData, 0, 0);
       setDiffPixels(numDiffPixels);
 
-    } catch (err: any) {
-        if (err.name !== 'RenderingCancelledException') {
+    } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'RenderingCancelledException') {
             setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
             console.error(err);
         }
