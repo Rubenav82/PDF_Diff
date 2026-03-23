@@ -126,9 +126,8 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
           err.name !== 'AbortError' &&
           requestId === requestIdRef.current
         ) {
-        if (err instanceof Error && err.name !== 'RenderingCancelledException') {
-            setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
-            console.error(err);
+          setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
+          console.error(err);
         }
     } finally {
       if (requestId === requestIdRef.current) {
