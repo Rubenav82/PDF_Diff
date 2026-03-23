@@ -18,6 +18,7 @@ export default function App() {
   const [isHashing, setIsHashing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('text');
+  const [includeUnmappedPages, setIncludeUnmappedPages] = useState<boolean>(false);
 
   const [hashes, setHashes] = useState<{ original: string | null; modified: string | null }>({ original: null, modified: null });
   const [pageCounts, setPageCounts] = useState<{ original: number; modified: number } | null>(null);
@@ -87,15 +88,60 @@ export default function App() {
       ]);
 
       const diffResults: TextDiffResult[] = [];
+      const mappedModifiedPages = new Set<number>();
+      const mappedOriginalPages = new Set<number>();
 
       for (const mapping of pageMapping) {
         if (mapping.modifiedPage > 0 && mapping.modifiedPage <= modifiedPages.length) {
           const originalText = originalPages[mapping.originalPage - 1] || '';
           const modifiedText = modifiedPages[mapping.modifiedPage - 1] || '';
+          mappedOriginalPages.add(mapping.originalPage);
+          mappedModifiedPages.add(mapping.modifiedPage);
           
           if (originalText !== modifiedText) {
             const pageDiff = diffChars(originalText, modifiedText);
-            diffResults.push({ page: mapping.originalPage, diff: pageDiff });
+            diffResults.push({
+              page: mapping.originalPage,
+              modifiedPage: mapping.modifiedPage,
+              kind: 'changed',
+              diff: pageDiff,
+            });
+          }
+        }
+      }
+
+      if (includeUnmappedPages) {
+        for (const mapping of pageMapping) {
+          if (mapping.modifiedPage === 0) {
+            const originalText = originalPages[mapping.originalPage - 1] || '';
+            diffResults.push({
+              page: mapping.originalPage,
+              kind: 'deleted',
+              diff: [{ value: originalText, added: false, removed: true, count: originalText.length }],
+            });
+          }
+        }
+
+        for (let originalPage = 1; originalPage <= originalPages.length; originalPage++) {
+          if (!mappedOriginalPages.has(originalPage)) {
+            const originalText = originalPages[originalPage - 1] || '';
+            diffResults.push({
+              page: originalPage,
+              kind: 'deleted',
+              diff: [{ value: originalText, added: false, removed: true, count: originalText.length }],
+            });
+          }
+        }
+
+        for (let modifiedPage = 1; modifiedPage <= modifiedPages.length; modifiedPage++) {
+          if (!mappedModifiedPages.has(modifiedPage)) {
+            const modifiedText = modifiedPages[modifiedPage - 1] || '';
+            diffResults.push({
+              page: 0,
+              modifiedPage,
+              kind: 'added',
+              diff: [{ value: modifiedText, added: true, removed: false, count: modifiedText.length }],
+            });
           }
         }
       }
@@ -112,7 +158,7 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [originalFile, modifiedFile, pageMapping]);
+  }, [originalFile, modifiedFile, pageMapping, includeUnmappedPages]);
 
   const handleReset = () => {
     setOriginalFile(null);
@@ -211,11 +257,32 @@ export default function App() {
             )}
 
             {pageMapping && pageCounts && !filesAreIdentical && (
-              <PageMapper
-                pageCounts={pageCounts}
-                mapping={pageMapping}
-                onMappingChange={setPageMapping}
-              />
+              <>
+                <PageMapper
+                  pageCounts={pageCounts}
+                  mapping={pageMapping}
+                  onMappingChange={setPageMapping}
+                />
+
+                <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
+                  <label className="inline-flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={includeUnmappedPages}
+                      onChange={(e) => setIncludeUnmappedPages(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-800">
+                        Incluir páginas no mapeadas en comparación de texto
+                      </span>
+                      <span className="block text-sm text-gray-600">
+                        Si está activado, se mostrarán como eliminadas/añadidas las páginas fuera del mapeo o marcadas con 0.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </>
             )}
 
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}

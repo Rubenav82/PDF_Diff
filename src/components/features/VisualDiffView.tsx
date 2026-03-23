@@ -24,10 +24,17 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
   const modifiedCanvasRef = useRef<HTMLCanvasElement>(null);
   const diffCanvasRef = useRef<HTMLCanvasElement>(null);
   const activeRenderTasks = useRef<RenderTaskCancellable[]>([]);
+  const requestIdRef = useRef(0);
 
   const currentMapEntry = pageMapping[currentIndex];
 
   const drawDiff = useCallback(async (originalPageNum: number, modifiedPageNum: number) => {
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
+    activeRenderTasks.current.forEach(task => task.cancel());
+    activeRenderTasks.current = [];
+
     setIsLoading(true);
     setError(null);
     setDiffPixels(0);
@@ -36,7 +43,10 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
     const modifiedCanvas = modifiedCanvasRef.current;
     const diffCanvas = diffCanvasRef.current;
 
-    if (!originalCanvas || !modifiedCanvas || !diffCanvas) return;
+    if (!originalCanvas || !modifiedCanvas || !diffCanvas) {
+      setIsLoading(false);
+      return;
+    }
 
     // Limpiar lienzos previos
     const canvases = [originalCanvas, modifiedCanvas, diffCanvas];
@@ -59,6 +69,10 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
             originalRender.promise,
             modifiedRender.promise,
         ]);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       
       const width = Math.max(originalCanvas.width, modifiedCanvas.width);
       const height = Math.max(originalCanvas.height, modifiedCanvas.height);
@@ -106,12 +120,19 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
       setDiffPixels(numDiffPixels);
 
     } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'RenderingCancelledException') {
+        if (
+          err instanceof Error &&
+          err.name !== 'RenderingCancelledException' &&
+          err.name !== 'AbortError' &&
+          requestId === requestIdRef.current
+        ) {
             setError(`Error renderizando par de páginas (${originalPageNum}, ${modifiedPageNum}): ${err.message}`);
             console.error(err);
         }
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [originalFile, modifiedFile]);
 
