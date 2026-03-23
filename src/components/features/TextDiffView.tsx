@@ -6,6 +6,19 @@ interface TextDiffViewProps {
 }
 
 export const TextDiffView: React.FC<TextDiffViewProps> = ({ diffResults }) => {
+  const getTitle = (page: number, modifiedPage: number | undefined, kind: TextDiffResult['kind']) => {
+    if (kind === 'deleted') {
+      return `Página ${page} eliminada en documento modificado`;
+    }
+    if (kind === 'added') {
+      return `Página ${modifiedPage ?? '-'} añadida en documento modificado`;
+    }
+    if (modifiedPage && modifiedPage !== page) {
+      return `Página original ${page} comparada con página modificada ${modifiedPage}`;
+    }
+    return `Página ${page}`;
+  };
+
   if (!diffResults || diffResults.length === 0) {
     return (
       <div className="text-center py-12">
@@ -17,10 +30,10 @@ export const TextDiffView: React.FC<TextDiffViewProps> = ({ diffResults }) => {
 
   return (
     <div className="space-y-8">
-      {diffResults.map(({ page, diff }) => (
-        <div key={page} className="border border-gray-200 rounded-lg">
+      {diffResults.map(({ page, modifiedPage, kind, diff }, index) => (
+        <div key={`${kind ?? 'changed'}-${page}-${modifiedPage ?? 0}-${index}`} className="border border-gray-200 rounded-lg">
           <h3 className="bg-gray-50 px-4 py-2 text-lg font-semibold border-b border-gray-200">
-            Página {page}
+            {getTitle(page, modifiedPage, kind)}
           </h3>
           <pre className="p-4 text-sm whitespace-pre-wrap font-sans break-words leading-relaxed">
             {diff.map((part, index) => {

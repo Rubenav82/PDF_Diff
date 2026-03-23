@@ -4,6 +4,7 @@ import { DocumentArrowUpIcon, CheckCircleIcon, TrashIcon } from './icons';
 // Configuración del tamaño máximo (en MB)
 const MAX_SIZE_MB = 5;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+const PDF_MIME_TYPE = 'application/pdf';
 
 interface FileUploaderProps {
   file: File | null;
@@ -18,6 +19,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateAndSetFile = useCallback((selectedFile: File) => {
+    const isPdfByMime = selectedFile.type === PDF_MIME_TYPE;
+    const isPdfByName = selectedFile.name.toLowerCase().endsWith('.pdf');
+    if (!isPdfByMime && !isPdfByName) {
+      setErrorMessage('Solo se permiten archivos PDF.');
+      return;
+    }
     if (selectedFile.size > MAX_SIZE_BYTES) {
       setErrorMessage(`El archivo supera el límite de ${MAX_SIZE_MB}MB.`);
       return;

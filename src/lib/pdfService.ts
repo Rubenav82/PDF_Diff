@@ -100,15 +100,31 @@ export function renderPageToCanvas(
   canvas: HTMLCanvasElement
 ): RenderTask {
   let renderTask: { promise: Promise<void>; cancel: () => void } | null = null;
+  let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
   const fileReader = new FileReader();
+  let isSettled = false;
 
   const promise = new Promise<{ width: number; height: number; }>((resolve, reject) => {
+    const safeResolve = (value: { width: number; height: number; }) => {
+      if (!isSettled) {
+        isSettled = true;
+        resolve(value);
+      }
+    };
+
+    const safeReject = (error: unknown) => {
+      if (!isSettled) {
+        isSettled = true;
+        reject(error);
+      }
+    };
+
     fileReader.onload = async (event) => {
       if (!event.target?.result) {
-        return reject(new Error('Error al leer el archivo.'));
+        return safeReject(new Error('Error al leer el archivo.'));
       }
       try {
-        const loadingTask = pdfjsLib.getDocument({ data: event.target.result });
+        loadingTask = pdfjsLib.getDocument({ data: event.target.result });
         const pdf = await loadingTask.promise;
 
         if (pageNum < 1 || pageNum > pdf.numPages) {
@@ -122,7 +138,7 @@ export function renderPageToCanvas(
             ctx.textAlign = "center";
             ctx.fillText(`Página ${pageNum} no existe en ese documento.`, canvas.width / 2, canvas.height / 2);
           }
-          return resolve({ width: 0, height: 0 });
+          return safeResolve({ width: 0, height: 0 });
         }
 
         const page = await pdf.getPage(pageNum);
@@ -133,7 +149,7 @@ export function renderPageToCanvas(
 
         const context = canvas.getContext('2d');
         if (!context) {
-          return reject(new Error('No se pudo obtener contexto del lienzo.'));
+          return safeReject(new Error('No se pudo obtener contexto del lienzo.'));
         }
 
         const renderContext = {
@@ -143,15 +159,13 @@ export function renderPageToCanvas(
 
         renderTask = page.render(renderContext);
         await renderTask.promise;
-        resolve({ width: viewport.width, height: viewport.height });
+        safeResolve({ width: viewport.width, height: viewport.height });
       } catch (error: unknown) {
-        // Ignorar el error de cancelación ya que es un comportamiento esperado
-        if (error instanceof Error && error.name !== 'RenderingCancelledException') {
-            reject(error);
-        }
+        safeReject(error);
       }
     };
-    fileReader.onerror = (error) => reject(error);
+    fileReader.onerror = (error) => safeReject(error);
+    fileReader.onabort = () => safeReject(new DOMException('Lectura cancelada.', 'AbortError'));
     fileReader.readAsArrayBuffer(file);
   });
 
@@ -160,6 +174,9 @@ export function renderPageToCanvas(
     cancel: () => {
       if (renderTask) {
         renderTask.cancel();
+      }
+      if (loadingTask) {
+        void loadingTask.destroy();
       }
       // Detener la lectura del archivo si aún no ha terminado
       if (fileReader.readyState === FileReader.LOADING) {
