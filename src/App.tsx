@@ -1,13 +1,23 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { diffChars } from 'diff';
 import { FileUploader } from './components/ui/FileUploader';
 import { ComparisonView } from './components/features/ComparisonView';
 import { Spinner } from './components/ui/Spinner';
 import { DocumentIcon, ArrowPathIcon } from './components/ui/icons';
 import { LogoIzertis, LogoAbanca } from './components/ui/Logo';
 import { getPdfPageCount, extractTextFromPdf, calculateFileHash } from './lib/pdfService';
-import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from './types/types';
+import type {
+  ComparisonSummary,
+  TextComparisonOptions,
+  ViewMode,
+  TextDiffResult,
+  VisualDiffResult,
+  PageMapping,
+} from './types/types';
 import { PageMapper } from './components/features/PageMapper';
+import { buildTextComparison } from './lib/textDiffService';
+import { ComparisonSummaryPanel } from './components/features/ComparisonSummary';
+import { downloadComparisonReport } from './lib/reportService';
+import { buildVisualDiffReportEntries } from './lib/visualReportService';
 
 export default function App() {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
@@ -19,10 +29,15 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('text');
   const [includeUnmappedPages, setIncludeUnmappedPages] = useState<boolean>(false);
+  const [ignoreCase, setIgnoreCase] = useState<boolean>(false);
+  const [ignoreWhitespace, setIgnoreWhitespace] = useState<boolean>(true);
+  const [ignoreLineBreaks, setIgnoreLineBreaks] = useState<boolean>(true);
 
   const [hashes, setHashes] = useState<{ original: string | null; modified: string | null }>({ original: null, modified: null });
   const [pageCounts, setPageCounts] = useState<{ original: number; modified: number } | null>(null);
   const [pageMapping, setPageMapping] = useState<PageMapping | null>(null);
+  const [comparisonSummary, setComparisonSummary] = useState<ComparisonSummary | null>(null);
+  const [isExportingReport, setIsExportingReport] = useState<boolean>(false);
 
   // Efecto para obtener conteo de páginas y hashes
   useEffect(() => {
@@ -87,66 +102,19 @@ export default function App() {
         extractTextFromPdf(modifiedFile),
       ]);
 
-      const diffResults: TextDiffResult[] = [];
-      const mappedModifiedPages = new Set<number>();
-      const mappedOriginalPages = new Set<number>();
+      const options: TextComparisonOptions = {
+        includeUnmappedPages,
+        normalization: {
+          ignoreCase,
+          ignoreWhitespace,
+          ignoreLineBreaks,
+        },
+      };
 
-      for (const mapping of pageMapping) {
-        if (mapping.modifiedPage > 0 && mapping.modifiedPage <= modifiedPages.length) {
-          const originalText = originalPages[mapping.originalPage - 1] || '';
-          const modifiedText = modifiedPages[mapping.modifiedPage - 1] || '';
-          mappedOriginalPages.add(mapping.originalPage);
-          mappedModifiedPages.add(mapping.modifiedPage);
-          
-          if (originalText !== modifiedText) {
-            const pageDiff = diffChars(originalText, modifiedText);
-            diffResults.push({
-              page: mapping.originalPage,
-              modifiedPage: mapping.modifiedPage,
-              kind: 'changed',
-              diff: pageDiff,
-            });
-          }
-        }
-      }
+      const comparison = buildTextComparison(originalPages, modifiedPages, pageMapping, options);
 
-      if (includeUnmappedPages) {
-        for (const mapping of pageMapping) {
-          if (mapping.modifiedPage === 0) {
-            const originalText = originalPages[mapping.originalPage - 1] || '';
-            diffResults.push({
-              page: mapping.originalPage,
-              kind: 'deleted',
-              diff: [{ value: originalText, added: false, removed: true, count: originalText.length }],
-            });
-          }
-        }
-
-        for (let originalPage = 1; originalPage <= originalPages.length; originalPage++) {
-          if (!mappedOriginalPages.has(originalPage)) {
-            const originalText = originalPages[originalPage - 1] || '';
-            diffResults.push({
-              page: originalPage,
-              kind: 'deleted',
-              diff: [{ value: originalText, added: false, removed: true, count: originalText.length }],
-            });
-          }
-        }
-
-        for (let modifiedPage = 1; modifiedPage <= modifiedPages.length; modifiedPage++) {
-          if (!mappedModifiedPages.has(modifiedPage)) {
-            const modifiedText = modifiedPages[modifiedPage - 1] || '';
-            diffResults.push({
-              page: 0,
-              modifiedPage,
-              kind: 'added',
-              diff: [{ value: modifiedText, added: true, removed: false, count: modifiedText.length }],
-            });
-          }
-        }
-      }
-      
-      setTextDiff(diffResults);
+      setTextDiff(comparison.diffResults);
+      setComparisonSummary(comparison.summary);
       setVisualDiff({
         originalPageCount: originalPages.length,
         modifiedPageCount: modifiedPages.length,
@@ -158,7 +126,15 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [originalFile, modifiedFile, pageMapping, includeUnmappedPages]);
+  }, [
+    originalFile,
+    modifiedFile,
+    pageMapping,
+    includeUnmappedPages,
+    ignoreCase,
+    ignoreWhitespace,
+    ignoreLineBreaks,
+  ]);
 
   const handleReset = () => {
     setOriginalFile(null);
@@ -171,10 +147,63 @@ export default function App() {
     setPageCounts(null);
     setPageMapping(null);
     setHashes({ original: null, modified: null });
+    setComparisonSummary(null);
   };
 
   const hasResults = textDiff !== null || visualDiff !== null;
   const filesAreIdentical = !!(hashes.original && hashes.modified && hashes.original === hashes.modified);
+
+  const handleExportReport = useCallback(async () => {
+    if (!originalFile || !modifiedFile || !pageMapping) return;
+
+    const options: TextComparisonOptions = {
+      includeUnmappedPages,
+      normalization: {
+        ignoreCase,
+        ignoreWhitespace,
+        ignoreLineBreaks,
+      },
+    };
+
+    setIsExportingReport(true);
+    try {
+      const visualDiffEntries = await buildVisualDiffReportEntries(
+        originalFile,
+        modifiedFile,
+        pageMapping
+      );
+
+      downloadComparisonReport({
+        createdAt: new Date().toLocaleString('es-ES'),
+        originalFileName: originalFile.name,
+        modifiedFileName: modifiedFile.name,
+        hashes,
+        pageCounts,
+        mapping: pageMapping,
+        options,
+        summary: comparisonSummary,
+        textDiff,
+        visualDiffEntries,
+      });
+    } catch (err) {
+      console.error('Error exportando informe:', err);
+      setError('No se pudo exportar el informe con diferencias visuales.');
+    } finally {
+      setIsExportingReport(false);
+    }
+  }, [
+    originalFile,
+    modifiedFile,
+    pageMapping,
+    includeUnmappedPages,
+    ignoreCase,
+    ignoreWhitespace,
+    ignoreLineBreaks,
+    hashes,
+    pageCounts,
+    comparisonSummary,
+    textDiff,
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 antialiased">
@@ -281,6 +310,39 @@ export default function App() {
                       </span>
                     </span>
                   </label>
+
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <p className="text-sm font-semibold text-gray-800 mb-2">Normalización de texto</p>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={ignoreCase}
+                          onChange={(e) => setIgnoreCase(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        Ignorar mayúsculas/minúsculas
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={ignoreWhitespace}
+                          onChange={(e) => setIgnoreWhitespace(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        Normalizar espacios
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={ignoreLineBreaks}
+                          onChange={(e) => setIgnoreLineBreaks(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        Ignorar saltos de línea
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -307,15 +369,27 @@ export default function App() {
         )}
 
         {hasResults && originalFile && modifiedFile && pageMapping && (
-          <ComparisonView
-            textDiff={textDiff}
-            visualDiff={visualDiff}
-            originalFile={originalFile}
-            modifiedFile={modifiedFile}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            pageMapping={pageMapping}
-          />
+          <>
+            {comparisonSummary && <ComparisonSummaryPanel summary={comparisonSummary} />}
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={handleExportReport}
+                disabled={isExportingReport}
+                className="px-4 py-2 text-sm font-semibold rounded-md border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isExportingReport ? 'Generando informe visual...' : 'Exportar informe'}
+              </button>
+            </div>
+            <ComparisonView
+              textDiff={textDiff}
+              visualDiff={visualDiff}
+              originalFile={originalFile}
+              modifiedFile={modifiedFile}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              pageMapping={pageMapping}
+            />
+          </>
         )}
       </main>
     </div>
