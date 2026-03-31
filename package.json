@@ -1,14 +1,16 @@
 {
   "name": "pdf-contract-diff-tool",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "author": "Rubén Asenjo Vega",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "diff": "^8.0.2",
@@ -35,6 +37,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.0.2",
     "typescript-eslint": "^8.57.1",
+    "vitest": "^2.1.9",
     "vite": "^5.0.0",
     "vite-plugin-static-copy": "^1.0.0"
   }
