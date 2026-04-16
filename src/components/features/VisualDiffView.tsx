@@ -29,9 +29,11 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
   const currentMapEntry = pageMapping[currentIndex];
 
   const drawDiff = useCallback(async (originalPageNum: number, modifiedPageNum: number) => {
+    // Track request ID to prevent stale renders from updating state if user navigates away
     requestIdRef.current += 1;
     const requestId = requestIdRef.current;
 
+    // Cancel any in-flight render tasks from the previous page view
     activeRenderTasks.current.forEach(task => task.cancel());
     activeRenderTasks.current = [];
 
@@ -70,6 +72,7 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
             modifiedRender.promise,
         ]);
 
+      // If user navigated to a different page while renders were in progress, abort stale render
       if (requestId !== requestIdRef.current) {
         return;
       }

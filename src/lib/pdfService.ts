@@ -105,6 +105,7 @@ export function renderPageToCanvas(
   let isSettled = false;
 
   const promise = new Promise<{ width: number; height: number; }>((resolve, reject) => {
+    // Prevent multiple resolutions if render is cancelled but completes simultaneously
     const safeResolve = (value: { width: number; height: number; }) => {
       if (!isSettled) {
         isSettled = true;
@@ -112,6 +113,7 @@ export function renderPageToCanvas(
       }
     };
 
+    // Prevent multiple rejections if cancellation races with completion
     const safeReject = (error: unknown) => {
       if (!isSettled) {
         isSettled = true;
@@ -142,6 +144,7 @@ export function renderPageToCanvas(
         }
 
         const page = await pdf.getPage(pageNum);
+        // Scale 1.5x for higher resolution visual diff (enables better pixel-level comparison)
         const viewport = page.getViewport({ scale: 1.5 });
 
         canvas.height = viewport.height;
