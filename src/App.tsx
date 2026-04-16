@@ -75,6 +75,7 @@ export default function App() {
         if (i <= pageCounts.modified) {
           defaultMapping.push({ originalPage: i, modifiedPage: i });
         } else {
+          // Convention: modifiedPage: 0 means this page was deleted (unmapped)
           defaultMapping.push({ originalPage: i, modifiedPage: 0 });
         }
       }

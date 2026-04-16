@@ -24,6 +24,7 @@ export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onM
   };
 
   const getUnmappedModifiedPages = () => {
+    // Filter out modifiedPage: 0 (deleted pages) to find pages that exist but are unmapped
     const mappedModifiedPages = new Set(mapping.map(m => m.modifiedPage).filter(p => p > 0));
     const allModifiedPages = Array.from({ length: pageCounts.modified }, (_, i) => i + 1);
     return allModifiedPages.filter(p => !mappedModifiedPages.has(p));

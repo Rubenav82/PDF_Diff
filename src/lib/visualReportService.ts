@@ -20,6 +20,7 @@ export async function buildVisualDiffReportEntries(
   modifiedFile: File,
   pageMapping: PageMapping
 ): Promise<VisualDiffReportEntry[]> {
+  // Only process mappings where both pages exist (skip deleted/added pages)
   const validMappings = pageMapping.filter(
     (entry) => entry.originalPage > 0 && entry.modifiedPage > 0
   );
@@ -36,6 +37,7 @@ export async function buildVisualDiffReportEntries(
 
     await Promise.all([originalRender.promise, modifiedRender.promise]);
 
+    // Use maximum dimensions to ensure both images fit when comparing different page sizes
     const width = Math.max(originalCanvas.width, modifiedCanvas.width);
     const height = Math.max(originalCanvas.height, modifiedCanvas.height);
 
@@ -51,6 +53,8 @@ export async function buildVisualDiffReportEntries(
       continue;
     }
 
+    // Normalize both rendered pages to the same dimensions before comparison
+    // pixelmatch requires both images to have identical width/height
     const tempOriginal = createCanvas();
     tempOriginal.width = width;
     tempOriginal.height = height;
@@ -80,6 +84,8 @@ export async function buildVisualDiffReportEntries(
     const modifiedImageData = tempModifiedCtx.getImageData(0, 0, width, height);
     const diffImageData = diffCtx.createImageData(width, height);
 
+    // threshold 0.1: Sensitivity to color differences (0.0 = strict, 1.0 = lenient)
+    // includeAA: Account for anti-aliasing differences to reduce false positives
     const diffPixels = pixelmatch(
       originalImageData.data,
       modifiedImageData.data,
