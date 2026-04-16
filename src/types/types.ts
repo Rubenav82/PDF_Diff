@@ -4,7 +4,12 @@ export type ViewMode = 'text' | 'visual';
 export type TextDiffKind = 'changed' | 'deleted' | 'added';
 
 export interface TextDiffResult {
-  page: number; // Esto se referirá al número de página del documento original
+  // page: original page number (0 if added page)
+  // modifiedPage: modified page number (undefined if deleted/unmapped page)
+  // kind: 'changed' = both pages exist and differ
+  //       'deleted' = original page has no mapping
+  //       'added' = modified page has no mapping
+  page: number;
   modifiedPage?: number;
   kind?: TextDiffKind;
   diff: Change[];
@@ -47,6 +52,7 @@ export interface VisualDiffReportEntry {
 
 export interface PageMapEntry {
   originalPage: number;
+  // modifiedPage: 0 means this original page was deleted (no mapping to modified version)
   modifiedPage: number;
 }
 

@@ -36,6 +36,7 @@ export function buildTextComparison(
   options: TextComparisonOptions
 ): TextComparisonResult {
   const diffResults: TextDiffResult[] = [];
+  // Track which pages have been explicitly mapped so we can detect unmapped originals later
   const mappedOriginalPages = new Set<number>();
   const mappedModifiedPages = new Set<number>();
   const deletedPages = new Set<number>();
@@ -76,6 +77,7 @@ export function buildTextComparison(
       }
     }
 
+    // Convention: modifiedPage === 0 indicates the original page was deleted in the modified version
     if (options.includeUnmappedPages && modifiedPage === 0 && originalPage > 0 && originalPage <= originalPages.length) {
       const originalText = normalizeText(originalPages[originalPage - 1] || '', options.normalization);
       deletedPages.add(originalPage);
@@ -104,6 +106,7 @@ export function buildTextComparison(
       if (!mappedModifiedPages.has(modifiedPage)) {
         const modifiedText = normalizeText(modifiedPages[modifiedPage - 1] || '', options.normalization);
         addedPages.add(modifiedPage);
+        // Convention: page: 0 for added pages (no corresponding original page)
         diffResults.push({
           page: 0,
           modifiedPage,
