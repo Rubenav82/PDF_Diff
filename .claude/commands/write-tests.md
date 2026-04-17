@@ -4,7 +4,7 @@ Testing conventions:
 * Use Vitests with React Testing Library
 * Places test files in a __tests__ directory in the same folder as the source file
 * Name test files as  [filename].test.ts
-* Use @/ prefix for imports
+* Use relative imports
 
 Coverage:
 * Test happy paths
