@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm show *)"
+      "Bash(npm show *)",
+      "mcp__playwright"
     ]
   }
 }
