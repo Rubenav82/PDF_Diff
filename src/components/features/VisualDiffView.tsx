@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import pixelmatch from 'pixelmatch';
 import { renderPageToCanvas } from '../../lib/pdfService';
+import { runPixelDiff } from '../../lib/workerClients';
 import { Spinner } from '../ui/Spinner';
+import { useSyncedZoom } from '../../hooks/useSyncedZoom';
 import type { PageMapping } from '../../types/types';
+import { useT } from '../../i18n/useT';
 
 interface VisualDiffViewProps {
   originalFile: File;
@@ -15,6 +17,7 @@ interface RenderTaskCancellable {
 }
 
 export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, modifiedFile, pageMapping }) => {
+  const t = useT();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,9 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
   const diffCanvasRef = useRef<HTMLCanvasElement>(null);
   const activeRenderTasks = useRef<RenderTaskCancellable[]>([]);
   const requestIdRef = useRef(0);
+
+  const zoom = useSyncedZoom();
+  const { reset: resetZoom } = zoom;
 
   const currentMapEntry = pageMapping[currentIndex];
 
@@ -108,18 +114,21 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
       tempModifiedCtx.drawImage(modifiedCanvas, 0, 0);
       const modifiedImageData = tempModifiedCtx.getImageData(0, 0, width, height);
       
-      const diffImageData = diffCtx.createImageData(width, height);
-      
-      const numDiffPixels = pixelmatch(
+      const { diffPixels: numDiffPixels, diffImageData } = await runPixelDiff(
         originalImageData.data,
         modifiedImageData.data,
-        diffImageData.data,
         width,
         height,
         { threshold: 0.1, includeAA: true }
       );
-      
-      diffCtx.putImageData(diffImageData, 0, 0);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      const canvasImageData = diffCtx.createImageData(width, height);
+      canvasImageData.data.set(diffImageData);
+      diffCtx.putImageData(canvasImageData, 0, 0);
       setDiffPixels(numDiffPixels);
 
     } catch (err: unknown) {
@@ -143,19 +152,20 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
     if (currentMapEntry) {
         drawDiff(currentMapEntry.originalPage, currentMapEntry.modifiedPage);
     }
-    
+    resetZoom();
+
     // Función de limpieza para cancelar renderizados en curso
     return () => {
         activeRenderTasks.current.forEach(task => task.cancel());
         activeRenderTasks.current = [];
     };
-  }, [currentMapEntry, drawDiff]);
+  }, [currentMapEntry, drawDiff, resetZoom]);
   
   if (pageMapping.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Sin páginas para la comparación visual</h3>
-        <p className="mt-1 text-sm text-gray-500">No se definieron mapeos de páginas válidos (p. ej., todas las páginas originales fueron marcadas como eliminadas).</p>
+        <h3 className="text-lg font-medium text-gray-900">{t('visual.noPagesTitle')}</h3>
+        <p className="mt-1 text-sm text-gray-500">{t('visual.noPagesBody')}</p>
       </div>
     );
   }
@@ -164,8 +174,8 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
     <div>
       <div className="flex flex-wrap items-center justify-between mb-4 bg-gray-50 p-3 rounded-md gap-4">
         <h3 className="text-lg font-medium text-gray-900">
-            Comparando: Original Pág. {currentMapEntry.originalPage} vs. Modificada Pág. {currentMapEntry.modifiedPage}
-            <span className="text-sm font-normal text-gray-600 ml-2">({currentIndex + 1} de {pageMapping.length})</span>
+            {t('visual.comparingHeader', { original: currentMapEntry.originalPage, modified: currentMapEntry.modifiedPage })}
+            <span className="text-sm font-normal text-gray-600 ml-2">{t('visual.progressCount', { current: currentIndex + 1, total: pageMapping.length })}</span>
         </h3>
         <div className="flex items-center space-x-2">
             <button
@@ -173,14 +183,14 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
                 disabled={currentIndex === 0 || isLoading}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
-                Anterior
+                {t('visual.prev')}
             </button>
             <button
                 onClick={() => setCurrentIndex(p => Math.min(pageMapping.length - 1, p + 1))}
                 disabled={currentIndex === pageMapping.length - 1 || isLoading}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
-                Siguiente
+                {t('visual.next')}
             </button>
         </div>
       </div>
@@ -188,27 +198,85 @@ export const VisualDiffView: React.FC<VisualDiffViewProps> = ({ originalFile, mo
       {isLoading && (
           <div className="flex items-center justify-center h-96">
             <Spinner />
-            <p className="ml-4">Renderizando y comparando páginas...</p>
+            <p className="ml-4">{t('visual.loading')}</p>
           </div>
         )
       }
       {error && <p className="text-red-600">{error}</p>}
-      
-      <div className={`grid lg:grid-cols-3 gap-6 transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <p className="text-xs text-gray-500">{t('visual.zoomHint')}</p>
+        <div className="flex items-center space-x-1">
+          <button
+            type="button"
+            onClick={zoom.zoomOut}
+            className="px-3 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            aria-label={t('visual.zoomOut')}
+          >
+            −
+          </button>
+          <span className="text-xs font-mono text-gray-600 w-14 text-center tabular-nums">
+            {Math.round(zoom.zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={zoom.zoomIn}
+            className="px-3 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            aria-label={t('visual.zoomIn')}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={zoom.reset}
+            className="ml-2 px-3 py-1 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            {t('visual.zoomReset')}
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={zoom.containerRef}
+        className={`grid lg:grid-cols-3 gap-6 transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+        onMouseDown={zoom.dragHandlers.onMouseDown}
+        onMouseMove={zoom.dragHandlers.onMouseMove}
+        onMouseUp={zoom.dragHandlers.onMouseUp}
+        onMouseLeave={zoom.dragHandlers.onMouseLeave}
+        style={{ cursor: zoom.isDragging ? 'grabbing' : zoom.zoom > 1 ? 'grab' : 'default' }}
+      >
         <div className="border rounded-lg p-2 shadow-sm">
-            <h4 className="font-bold text-center mb-2">Original (Pág. {currentMapEntry.originalPage})</h4>
-            <canvas ref={originalCanvasRef} className="w-full h-auto" />
+            <h4 className="font-bold text-center mb-2">{t('visual.originalPage', { page: currentMapEntry.originalPage })}</h4>
+            <div className="overflow-hidden">
+              <canvas
+                ref={originalCanvasRef}
+                className="w-full h-auto select-none"
+                style={{ transform: zoom.transform, transformOrigin: '0 0' }}
+              />
+            </div>
         </div>
         <div className="border rounded-lg p-2 shadow-sm">
-            <h4 className="font-bold text-center mb-2">Modificado (Pág. {currentMapEntry.modifiedPage})</h4>
-            <canvas ref={modifiedCanvasRef} className="w-full h-auto" />
+            <h4 className="font-bold text-center mb-2">{t('visual.modifiedPage', { page: currentMapEntry.modifiedPage })}</h4>
+            <div className="overflow-hidden">
+              <canvas
+                ref={modifiedCanvasRef}
+                className="w-full h-auto select-none"
+                style={{ transform: zoom.transform, transformOrigin: '0 0' }}
+              />
+            </div>
         </div>
         <div className="border rounded-lg p-2 shadow-sm bg-gray-50">
-            <h4 className="font-bold text-center mb-2">Diferencias</h4>
+            <h4 className="font-bold text-center mb-2">{t('visual.diff')}</h4>
             <div className="mb-2 text-center text-sm p-2 rounded-md bg-yellow-100 text-yellow-800">
-              {diffPixels > 0 ? `${diffPixels} píxeles diferentes.` : 'No se detectaron diferencias visuales.'}
+              {diffPixels > 0 ? t('visual.diffPixels', { count: diffPixels }) : t('visual.noVisualDiff')}
             </div>
-            <canvas ref={diffCanvasRef} className="w-full h-auto" />
+            <div className="overflow-hidden">
+              <canvas
+                ref={diffCanvasRef}
+                className="w-full h-auto select-none"
+                style={{ transform: zoom.transform, transformOrigin: '0 0' }}
+              />
+            </div>
         </div>
       </div>
     </div>

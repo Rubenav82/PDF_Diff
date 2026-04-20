@@ -1,5 +1,5 @@
-import pixelmatch from 'pixelmatch';
 import { renderPageToCanvas } from './pdfService';
+import { runPixelDiff } from './workerClients';
 import type { PageMapping, VisualDiffReportEntry } from '../types/types';
 
 const createCanvas = (): HTMLCanvasElement => document.createElement('canvas');
@@ -82,20 +82,18 @@ export async function buildVisualDiffReportEntries(
 
     const originalImageData = tempOriginalCtx.getImageData(0, 0, width, height);
     const modifiedImageData = tempModifiedCtx.getImageData(0, 0, width, height);
-    const diffImageData = diffCtx.createImageData(width, height);
 
-    // threshold 0.1: Sensitivity to color differences (0.0 = strict, 1.0 = lenient)
-    // includeAA: Account for anti-aliasing differences to reduce false positives
-    const diffPixels = pixelmatch(
+    const { diffPixels, diffImageData } = await runPixelDiff(
       originalImageData.data,
       modifiedImageData.data,
-      diffImageData.data,
       width,
       height,
       { threshold: 0.1, includeAA: true }
     );
 
-    diffCtx.putImageData(diffImageData, 0, 0);
+    const diffCanvasImageData = diffCtx.createImageData(width, height);
+    diffCanvasImageData.data.set(diffImageData);
+    diffCtx.putImageData(diffCanvasImageData, 0, 0);
 
     const totalPixels = width * height;
     const diffRatio = totalPixels > 0 ? diffPixels / totalPixels : 0;
