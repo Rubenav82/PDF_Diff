@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useRef } from 'react';
 import { DocumentArrowUpIcon, CheckCircleIcon, TrashIcon } from './icons';
+import { useT } from '../../i18n/useT';
 
 // Configuración del tamaño máximo (en MB)
 const MAX_SIZE_MB = 5;
@@ -14,6 +15,7 @@ interface FileUploaderProps {
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, label, id }) => {
+  const t = useT();
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,16 +24,16 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
     const isPdfByMime = selectedFile.type === PDF_MIME_TYPE;
     const isPdfByName = selectedFile.name.toLowerCase().endsWith('.pdf');
     if (!isPdfByMime && !isPdfByName) {
-      setErrorMessage('Solo se permiten archivos PDF.');
+      setErrorMessage(t('upload.onlyPdf'));
       return;
     }
     if (selectedFile.size > MAX_SIZE_BYTES) {
-      setErrorMessage(`El archivo supera el límite de ${MAX_SIZE_MB}MB.`);
+      setErrorMessage(t('upload.maxSize', { max: MAX_SIZE_MB }));
       return;
     }
     setErrorMessage(null);
     onFileSelect(selectedFile);
-  }, [onFileSelect]);
+  }, [onFileSelect, t]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -63,7 +65,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
     e.stopPropagation();
     setIsDragging(true);
   };
-  
+
   const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,17 +89,17 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
           {file && !errorMessage ? (
             <div className="relative group">
               <CheckCircleIcon className="mx-auto h-12 w-12 text-green-500" />
-              <p className="font-semibold text-green-700 mt-2">Archivo seleccionado</p>
+              <p className="font-semibold text-green-700 mt-2">{t('upload.selected')}</p>
               <p className="text-xs text-gray-500 break-all px-4 mt-1">{file.name}</p>
               <p className="text-xs text-gray-400 mt-1">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-              
+
               <button
                 onClick={handleRemove}
                 className="mt-4 flex items-center justify-center space-x-1 mx-auto px-3 py-1 bg-white border border-red-200 text-red-600 rounded-full text-xs font-medium hover:bg-red-50 hover:border-red-300 transition-colors shadow-sm"
-                title="Eliminar archivo"
+                title={t('upload.remove')}
               >
                 <TrashIcon className="h-3.5 w-3.5" />
-                <span>Eliminar archivo</span>
+                <span>{t('upload.remove')}</span>
               </button>
             </div>
           ) : (
@@ -105,20 +107,20 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
               <DocumentArrowUpIcon className={`mx-auto h-12 w-12 ${errorMessage ? 'text-red-400' : 'text-gray-400'}`} />
               <div className="flex text-sm text-gray-600 justify-center">
                 <span className="relative rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                  <span>Carga un archivo</span>
-                  <input 
+                  <span>{t('upload.load')}</span>
+                  <input
                     ref={fileInputRef}
-                    id={id} 
-                    name={id} 
-                    type="file" 
-                    accept=".pdf" 
-                    className="sr-only" 
-                    onChange={handleFileChange} 
+                    id={id}
+                    name={id}
+                    type="file"
+                    accept=".pdf"
+                    className="sr-only"
+                    onChange={handleFileChange}
                   />
                 </span>
-                <p className="pl-1">o arrástralo</p>
+                <p className="pl-1">{t('upload.orDrop')}</p>
               </div>
-              <p className="text-xs text-gray-500">Máximo PDF {MAX_SIZE_MB}Mb</p>
+              <p className="text-xs text-gray-500">{t('upload.maxSizeHint', { max: MAX_SIZE_MB })}</p>
             </>
           )}
         </div>

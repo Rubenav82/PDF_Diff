@@ -2,6 +2,7 @@ import React from 'react';
 import { TextDiffView } from './TextDiffView';
 import { VisualDiffView } from './VisualDiffView';
 import type { ViewMode, TextDiffResult, VisualDiffResult, PageMapping } from '../../types/types';
+import { useT } from '../../i18n/useT';
 
 interface ComparisonViewProps {
   textDiff: TextDiffResult[] | null;
@@ -22,6 +23,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
   onViewModeChange,
   pageMapping,
 }) => {
+  const t = useT();
   const renderContent = () => {
     if (viewMode === 'text') {
       return <TextDiffView diffResults={textDiff} />;
@@ -52,7 +54,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Comparación Texto
+            {t('tabs.text')}
           </button>
           <button
             onClick={() => onViewModeChange('visual')}
@@ -62,7 +64,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Comparación Visual
+            {t('tabs.visual')}
           </button>
         </nav>
       </div>

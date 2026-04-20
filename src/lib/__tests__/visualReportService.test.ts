@@ -23,8 +23,8 @@ function makeImageData(width: number, height: number): ImageData {
 function makeCtx(width = 100, height = 100) {
   return {
     drawImage: vi.fn(),
-    getImageData: vi.fn(() => makeImageData(width, height)),
-    createImageData: vi.fn(() => makeImageData(width, height)),
+    getImageData: vi.fn((_x = 0, _y = 0, w = width, h = height) => makeImageData(w, h)),
+    createImageData: vi.fn((w = width, h = height) => makeImageData(w, h)),
     putImageData: vi.fn(),
   };
 }

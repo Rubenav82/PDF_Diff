@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ComparisonSummary } from '../../types/types';
+import { useT } from '../../i18n/useT';
 
 interface ComparisonSummaryProps {
   summary: ComparisonSummary;
@@ -20,20 +21,19 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value }) => {
 };
 
 export const ComparisonSummaryPanel: React.FC<ComparisonSummaryProps> = ({ summary }) => {
+  const t = useT();
   return (
     <div className="mb-6 rounded-lg border border-indigo-100 bg-indigo-50 p-5">
-      <h3 className="text-lg font-semibold text-indigo-900">Resumen ejecutivo</h3>
-      <p className="mt-1 text-sm text-indigo-800">
-        Vista rápida del resultado antes de entrar en el detalle de texto o visual.
-      </p>
+      <h3 className="text-lg font-semibold text-indigo-900">{t('summary.title')}</h3>
+      <p className="mt-1 text-sm text-indigo-800">{t('summary.subtitle')}</p>
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
-        <MetricCard label="Pares mapeados" value={summary.mappedPairs} />
-        <MetricCard label="Pares con cambios" value={summary.changedPairs} />
-        <MetricCard label="Pares sin cambios" value={summary.unchangedPairs} />
-        <MetricCard label="Páginas eliminadas" value={summary.deletedPages} />
-        <MetricCard label="Páginas añadidas" value={summary.addedPages} />
-        <MetricCard label="Total páginas original" value={summary.totalOriginalPages} />
-        <MetricCard label="Total páginas modificado" value={summary.totalModifiedPages} />
+        <MetricCard label={t('summary.mappedPairs')} value={summary.mappedPairs} />
+        <MetricCard label={t('summary.changedPairs')} value={summary.changedPairs} />
+        <MetricCard label={t('summary.unchangedPairs')} value={summary.unchangedPairs} />
+        <MetricCard label={t('summary.deletedPages')} value={summary.deletedPages} />
+        <MetricCard label={t('summary.addedPages')} value={summary.addedPages} />
+        <MetricCard label={t('summary.totalOriginalPages')} value={summary.totalOriginalPages} />
+        <MetricCard label={t('summary.totalModifiedPages')} value={summary.totalModifiedPages} />
       </div>
     </div>
   );

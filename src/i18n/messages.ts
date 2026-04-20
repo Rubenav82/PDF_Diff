@@ -1,0 +1,335 @@
+export type Locale = 'es' | 'en';
+
+export const LOCALES: readonly Locale[] = ['es', 'en'] as const;
+
+const es = {
+  // App / header
+  'app.title': 'PDF Diferencias Documentos',
+  'app.newComparison': 'Comenzar Nueva Comparación',
+  'app.heading': 'Herramienta de comparación de PDF',
+  'app.uploadHint':
+    'Carga una versión original y una modificada de tu PDF para ver una comparación detallada de los cambios en el texto y el diseño.',
+  'app.uploadOriginal': 'Documento Original',
+  'app.uploadModified': 'Documento Modificado',
+  'app.hashing': 'Calculando firmas digitales (SHA-512)...',
+  'app.identicalTitle': 'Los documentos son idénticos.',
+  'app.identicalBody': 'Las firmas digitales coinciden exactamente. No hay cambios que comparar.',
+  'app.compareButton': 'Comparar Documentos',
+  'app.comparing': 'Comparando...',
+  'app.verifying': 'Verificando...',
+  'app.analyzing': 'Analizando tus documentos...',
+  'app.progressPage': 'Página {current} de {total}',
+  'app.exportReport': 'Exportar informe',
+  'app.exportingReport': 'Generando informe visual...',
+  'app.settings.includeUnmapped': 'Incluir páginas no mapeadas en comparación de texto',
+  'app.settings.includeUnmappedBody':
+    'Si está activado, se mostrarán como eliminadas/añadidas las páginas fuera del mapeo o marcadas con 0.',
+  'app.settings.normalization': 'Normalización de texto',
+  'app.settings.ignoreCase': 'Ignorar mayúsculas/minúsculas',
+  'app.settings.ignoreWhitespace': 'Normalizar espacios',
+  'app.settings.ignoreLineBreaks': 'Ignorar saltos de línea',
+  'app.settings.enableOcr': 'Habilitar OCR para páginas escaneadas (español + inglés)',
+  'app.settings.enableOcrBody':
+    'Cuando pdfjs no extrae texto de una página (p. ej., contratos firmados escaneados), se usará reconocimiento óptico. El proceso descarga ~2\u00A0MB y puede tardar varios segundos por página.',
+  'app.errors.initialLoad': 'No se pudieron procesar los archivos para la comprobación inicial.',
+  'app.errors.missingInputs': 'Por favor, seleccione los PDF y configure el mapeo de páginas.',
+  'app.errors.compareFailed':
+    'Ocurrió un error al procesar los PDF. Por favor, asegúrese de que sean archivos válidos.',
+  'app.errors.exportFailed': 'No se pudo exportar el informe con diferencias visuales.',
+  'app.ocr.running': 'Ejecutando OCR: {count} páginas escaneadas detectadas',
+
+  // Language selector
+  'lang.label': 'Idioma',
+  'lang.es': 'Español',
+  'lang.en': 'English',
+
+  // Summary panel
+  'summary.title': 'Resumen ejecutivo',
+  'summary.subtitle': 'Vista rápida del resultado antes de entrar en el detalle de texto o visual.',
+  'summary.mappedPairs': 'Pares mapeados',
+  'summary.changedPairs': 'Pares con cambios',
+  'summary.unchangedPairs': 'Pares sin cambios',
+  'summary.deletedPages': 'Páginas eliminadas',
+  'summary.addedPages': 'Páginas añadidas',
+  'summary.totalOriginalPages': 'Total páginas original',
+  'summary.totalModifiedPages': 'Total páginas modificado',
+
+  // Comparison tabs
+  'tabs.text': 'Comparación Texto',
+  'tabs.visual': 'Comparación Visual',
+
+  // FileUploader
+  'upload.onlyPdf': 'Solo se permiten archivos PDF.',
+  'upload.maxSize': 'El archivo supera el límite de {max}MB.',
+  'upload.selected': 'Archivo seleccionado',
+  'upload.remove': 'Eliminar archivo',
+  'upload.load': 'Carga un archivo',
+  'upload.orDrop': 'o arrástralo',
+  'upload.maxSizeHint': 'Máximo PDF {max}Mb',
+
+  // Page mapper
+  'mapper.title': 'Configurar Mapeo de Páginas',
+  'mapper.instructions':
+    "Ajusta qué página del documento modificado se debe comparar con cada página del original. Ingresa '0' si una página fue eliminada.",
+  'mapper.suggest': 'Sugerir mapeo automático',
+  'mapper.analyzing': 'Analizando contenido…',
+  'mapper.suggestError':
+    'No se pudo sugerir un mapeo automático. Revisa la consola para más detalles.',
+  'mapper.oneToOne': 'Mapeo 1:1',
+  'mapper.shiftMinus': 'Desplazar -1',
+  'mapper.shiftPlus': 'Desplazar +1',
+  'mapper.markAllDeleted': 'Marcar todas como eliminadas',
+  'mapper.originalPageLabel': 'Original Pág. {n}',
+  'mapper.deletedOption': 'Eliminada (0)',
+  'mapper.pageOption': 'Pág. {n}',
+  'mapper.selectAria': 'Página modificada para la página original {n}',
+  'mapper.duplicates': 'Mapeos duplicados detectados:',
+  'mapper.newPages': 'Páginas nuevas (no mapeadas) en doc. modificado:',
+
+  // TextDiffView
+  'textDiff.deleted': 'Página {page} eliminada en documento modificado',
+  'textDiff.added': 'Página {page} añadida en documento modificado',
+  'textDiff.comparedWith':
+    'Página original {page} comparada con página modificada {modified}',
+  'textDiff.pageHeader': 'Página {page}',
+  'textDiff.emptyTitle': 'No se encontraron diferencias textuales',
+  'textDiff.emptyBody': 'El contenido textual de ambos documentos aparentemente es idéntico.',
+
+  // VisualDiffView
+  'visual.noPagesTitle': 'Sin páginas para la comparación visual',
+  'visual.noPagesBody':
+    'No se definieron mapeos de páginas válidos (p. ej., todas las páginas originales fueron marcadas como eliminadas).',
+  'visual.comparingHeader': 'Comparando: Original Pág. {original} vs. Modificada Pág. {modified}',
+  'visual.progressCount': '({current} de {total})',
+  'visual.prev': 'Anterior',
+  'visual.next': 'Siguiente',
+  'visual.loading': 'Renderizando y comparando páginas...',
+  'visual.zoomHint':
+    'Arrastra con el ratón para desplazar. Usa Ctrl+rueda sobre las imágenes para acercar/alejar.',
+  'visual.zoomOut': 'Reducir zoom',
+  'visual.zoomIn': 'Aumentar zoom',
+  'visual.zoomReset': 'Ajustar',
+  'visual.originalPage': 'Original (Pág. {page})',
+  'visual.modifiedPage': 'Modificado (Pág. {page})',
+  'visual.diff': 'Diferencias',
+  'visual.diffPixels': '{count} píxeles diferentes.',
+  'visual.noVisualDiff': 'No se detectaron diferencias visuales.',
+
+  // Report (ASCII-safe Spanish kept to match existing snapshot tests)
+  'report.title': 'Informe PDF Diff',
+  'report.heading': 'Informe de comparacion PDF',
+  'report.generated': 'Generado: {date}',
+  'report.docs.title': 'Documentos',
+  'report.docs.original': 'Original:',
+  'report.docs.modified': 'Modificado:',
+  'report.docs.originalHash': 'Hash original:',
+  'report.docs.modifiedHash': 'Hash modificado:',
+  'report.docs.pagesOriginal': 'Paginas original:',
+  'report.docs.pagesModified': 'Paginas modificado:',
+  'report.opts.title': 'Opciones de comparacion',
+  'report.opts.includeUnmapped': 'Incluir no mapeadas:',
+  'report.opts.ignoreCase': 'Ignorar mayusculas/minusculas:',
+  'report.opts.ignoreWhitespace': 'Normalizar espacios:',
+  'report.opts.ignoreLineBreaks': 'Ignorar saltos de linea:',
+  'report.summary.title': 'Resumen ejecutivo',
+  'report.summary.mapped': 'Pares mapeados:',
+  'report.summary.changed': 'Pares con cambios:',
+  'report.summary.unchanged': 'Pares sin cambios:',
+  'report.summary.deleted': 'Paginas eliminadas:',
+  'report.summary.added': 'Paginas anadidas:',
+  'report.summary.textDiffs': 'Total diferencias textuales:',
+  'report.mapping.title': 'Mapeo aplicado',
+  'report.mapping.orig': 'Pagina original',
+  'report.mapping.mod': 'Pagina modificada',
+  'report.text.title': 'Diferencias textuales',
+  'report.text.type': 'Tipo',
+  'report.text.pOrig': 'Pag. original',
+  'report.text.pMod': 'Pag. modificada',
+  'report.text.changes': 'Cambios detectados (con contexto)',
+  'report.text.none': 'Sin diferencias',
+  'report.visual.title': 'Diferencias visuales',
+  'report.visual.pixels': 'Pixeles distintos',
+  'report.visual.percent': '% diferencia',
+  'report.visual.thumbnail': 'Miniatura diff',
+  'report.visual.noThumb': 'Sin miniatura',
+  'report.visual.none': 'Sin datos visuales',
+  'report.kind.added': 'Anadida',
+  'report.kind.deleted': 'Eliminada',
+  'report.kind.changed': 'Cambiada',
+  'report.yes': 'Si',
+  'report.no': 'No',
+  'report.emptyContent': '(sin contenido textual)',
+  'report.moreChanges': 'Ver mas cambios ({n})',
+} as const;
+
+export type MessageKey = keyof typeof es;
+
+const en: Record<MessageKey, string> = {
+  'app.title': 'PDF Document Diff',
+  'app.newComparison': 'Start New Comparison',
+  'app.heading': 'PDF Comparison Tool',
+  'app.uploadHint':
+    'Upload an original and a modified version of your PDF to see a detailed comparison of changes in text and layout.',
+  'app.uploadOriginal': 'Original Document',
+  'app.uploadModified': 'Modified Document',
+  'app.hashing': 'Calculating digital signatures (SHA-512)...',
+  'app.identicalTitle': 'The documents are identical.',
+  'app.identicalBody': 'The digital signatures match exactly. There are no changes to compare.',
+  'app.compareButton': 'Compare Documents',
+  'app.comparing': 'Comparing...',
+  'app.verifying': 'Verifying...',
+  'app.analyzing': 'Analyzing your documents...',
+  'app.progressPage': 'Page {current} of {total}',
+  'app.exportReport': 'Export report',
+  'app.exportingReport': 'Generating visual report...',
+  'app.settings.includeUnmapped': 'Include unmapped pages in text comparison',
+  'app.settings.includeUnmappedBody':
+    'If enabled, pages outside the mapping or marked as 0 will be shown as deleted/added.',
+  'app.settings.normalization': 'Text normalization',
+  'app.settings.ignoreCase': 'Ignore case',
+  'app.settings.ignoreWhitespace': 'Normalize whitespace',
+  'app.settings.ignoreLineBreaks': 'Ignore line breaks',
+  'app.settings.enableOcr': 'Enable OCR for scanned pages (Spanish + English)',
+  'app.settings.enableOcrBody':
+    'When pdfjs cannot extract text from a page (e.g. scanned signed contracts), optical character recognition is used. It downloads ~2\u00A0MB and can take several seconds per page.',
+  'app.errors.initialLoad': 'Could not process the files for the initial check.',
+  'app.errors.missingInputs': 'Please select the PDFs and configure the page mapping.',
+  'app.errors.compareFailed':
+    'Something went wrong while processing the PDFs. Please make sure they are valid files.',
+  'app.errors.exportFailed': 'Could not export the report with visual differences.',
+  'app.ocr.running': 'Running OCR: {count} scanned pages detected',
+
+  'lang.label': 'Language',
+  'lang.es': 'Español',
+  'lang.en': 'English',
+
+  'summary.title': 'Executive summary',
+  'summary.subtitle': 'Quick overview of the result before diving into the text or visual detail.',
+  'summary.mappedPairs': 'Mapped pairs',
+  'summary.changedPairs': 'Changed pairs',
+  'summary.unchangedPairs': 'Unchanged pairs',
+  'summary.deletedPages': 'Deleted pages',
+  'summary.addedPages': 'Added pages',
+  'summary.totalOriginalPages': 'Total original pages',
+  'summary.totalModifiedPages': 'Total modified pages',
+
+  'tabs.text': 'Text Comparison',
+  'tabs.visual': 'Visual Comparison',
+
+  'upload.onlyPdf': 'Only PDF files are allowed.',
+  'upload.maxSize': 'The file exceeds the {max}MB limit.',
+  'upload.selected': 'File selected',
+  'upload.remove': 'Remove file',
+  'upload.load': 'Upload a file',
+  'upload.orDrop': 'or drag it',
+  'upload.maxSizeHint': 'Max PDF {max}Mb',
+
+  'mapper.title': 'Configure Page Mapping',
+  'mapper.instructions':
+    "Adjust which page of the modified document should be compared with each page of the original. Enter '0' if a page was deleted.",
+  'mapper.suggest': 'Suggest automatic mapping',
+  'mapper.analyzing': 'Analyzing content…',
+  'mapper.suggestError':
+    'Could not suggest an automatic mapping. Check the console for details.',
+  'mapper.oneToOne': '1:1 Mapping',
+  'mapper.shiftMinus': 'Shift -1',
+  'mapper.shiftPlus': 'Shift +1',
+  'mapper.markAllDeleted': 'Mark all as deleted',
+  'mapper.originalPageLabel': 'Original p. {n}',
+  'mapper.deletedOption': 'Deleted (0)',
+  'mapper.pageOption': 'P. {n}',
+  'mapper.selectAria': 'Modified page for original page {n}',
+  'mapper.duplicates': 'Duplicate mappings detected:',
+  'mapper.newPages': 'New (unmapped) pages in modified document:',
+
+  'textDiff.deleted': 'Page {page} deleted in modified document',
+  'textDiff.added': 'Page {page} added in modified document',
+  'textDiff.comparedWith': 'Original page {page} compared with modified page {modified}',
+  'textDiff.pageHeader': 'Page {page}',
+  'textDiff.emptyTitle': 'No text differences found',
+  'textDiff.emptyBody': 'The textual content of both documents appears to be identical.',
+
+  'visual.noPagesTitle': 'No pages for visual comparison',
+  'visual.noPagesBody':
+    'No valid page mappings were defined (e.g., all original pages were marked as deleted).',
+  'visual.comparingHeader': 'Comparing: Original p. {original} vs. Modified p. {modified}',
+  'visual.progressCount': '({current} of {total})',
+  'visual.prev': 'Previous',
+  'visual.next': 'Next',
+  'visual.loading': 'Rendering and comparing pages...',
+  'visual.zoomHint': 'Drag with the mouse to pan. Use Ctrl+wheel over the images to zoom.',
+  'visual.zoomOut': 'Zoom out',
+  'visual.zoomIn': 'Zoom in',
+  'visual.zoomReset': 'Fit',
+  'visual.originalPage': 'Original (p. {page})',
+  'visual.modifiedPage': 'Modified (p. {page})',
+  'visual.diff': 'Differences',
+  'visual.diffPixels': '{count} different pixels.',
+  'visual.noVisualDiff': 'No visual differences detected.',
+
+  'report.title': 'PDF Diff Report',
+  'report.heading': 'PDF comparison report',
+  'report.generated': 'Generated: {date}',
+  'report.docs.title': 'Documents',
+  'report.docs.original': 'Original:',
+  'report.docs.modified': 'Modified:',
+  'report.docs.originalHash': 'Original hash:',
+  'report.docs.modifiedHash': 'Modified hash:',
+  'report.docs.pagesOriginal': 'Original pages:',
+  'report.docs.pagesModified': 'Modified pages:',
+  'report.opts.title': 'Comparison options',
+  'report.opts.includeUnmapped': 'Include unmapped:',
+  'report.opts.ignoreCase': 'Ignore case:',
+  'report.opts.ignoreWhitespace': 'Normalize whitespace:',
+  'report.opts.ignoreLineBreaks': 'Ignore line breaks:',
+  'report.summary.title': 'Executive summary',
+  'report.summary.mapped': 'Mapped pairs:',
+  'report.summary.changed': 'Changed pairs:',
+  'report.summary.unchanged': 'Unchanged pairs:',
+  'report.summary.deleted': 'Deleted pages:',
+  'report.summary.added': 'Added pages:',
+  'report.summary.textDiffs': 'Total text differences:',
+  'report.mapping.title': 'Applied mapping',
+  'report.mapping.orig': 'Original page',
+  'report.mapping.mod': 'Modified page',
+  'report.text.title': 'Text differences',
+  'report.text.type': 'Type',
+  'report.text.pOrig': 'Orig. page',
+  'report.text.pMod': 'Mod. page',
+  'report.text.changes': 'Detected changes (with context)',
+  'report.text.none': 'No differences',
+  'report.visual.title': 'Visual differences',
+  'report.visual.pixels': 'Different pixels',
+  'report.visual.percent': '% difference',
+  'report.visual.thumbnail': 'Diff thumbnail',
+  'report.visual.noThumb': 'No thumbnail',
+  'report.visual.none': 'No visual data',
+  'report.kind.added': 'Added',
+  'report.kind.deleted': 'Deleted',
+  'report.kind.changed': 'Changed',
+  'report.yes': 'Yes',
+  'report.no': 'No',
+  'report.emptyContent': '(no textual content)',
+  'report.moreChanges': 'Show more changes ({n})',
+};
+
+export const messages: Record<Locale, Record<MessageKey, string>> = { es, en };
+
+export function interpolate(
+  template: string,
+  params?: Record<string, string | number>
+): string {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (match, name) =>
+    params[name] !== undefined ? String(params[name]) : match
+  );
+}
+
+export function translate(
+  locale: Locale,
+  key: MessageKey,
+  params?: Record<string, string | number>
+): string {
+  const template = messages[locale]?.[key] ?? messages.es[key] ?? key;
+  return interpolate(template, params);
+}

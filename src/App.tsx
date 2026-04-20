@@ -14,12 +14,19 @@ import type {
   PageMapping,
 } from './types/types';
 import { PageMapper } from './components/features/PageMapper';
-import { buildTextComparison } from './lib/textDiffService';
+import { buildTextComparisonAsync } from './lib/textDiffService';
+import { suggestPageMapping } from './lib/pageMatcher';
+import { pickPagesNeedingOcr, runOcrOnPages } from './lib/ocrService';
 import { ComparisonSummaryPanel } from './components/features/ComparisonSummary';
 import { downloadComparisonReport } from './lib/reportService';
 import { buildVisualDiffReportEntries } from './lib/visualReportService';
+import { useT } from './i18n/useT';
+import { useLanguage } from './i18n/LanguageContext';
+import { LanguageSelector } from './components/ui/LanguageSelector';
 
 export default function App() {
+  const t = useT();
+  const { locale } = useLanguage();
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [modifiedFile, setModifiedFile] = useState<File | null>(null);
   const [textDiff, setTextDiff] = useState<TextDiffResult[] | null>(null);
@@ -32,12 +39,16 @@ export default function App() {
   const [ignoreCase, setIgnoreCase] = useState<boolean>(false);
   const [ignoreWhitespace, setIgnoreWhitespace] = useState<boolean>(true);
   const [ignoreLineBreaks, setIgnoreLineBreaks] = useState<boolean>(true);
+  const [enableOcr, setEnableOcr] = useState<boolean>(false);
+  const [ocrStatus, setOcrStatus] = useState<string | null>(null);
 
   const [hashes, setHashes] = useState<{ original: string | null; modified: string | null }>({ original: null, modified: null });
   const [pageCounts, setPageCounts] = useState<{ original: number; modified: number } | null>(null);
   const [pageMapping, setPageMapping] = useState<PageMapping | null>(null);
   const [comparisonSummary, setComparisonSummary] = useState<ComparisonSummary | null>(null);
   const [isExportingReport, setIsExportingReport] = useState<boolean>(false);
+  const [extractedTexts, setExtractedTexts] = useState<{ original: string[]; modified: string[] } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Efecto para obtener conteo de páginas y hashes
   useEffect(() => {
@@ -55,7 +66,7 @@ export default function App() {
           setHashes({ original: hOriginal, modified: hModified });
           setError(null);
         } catch (err) {
-          setError('No se pudieron procesar los archivos para la comprobación inicial.');
+          setError(t('app.errors.initialLoad'));
           console.error(err);
         } finally {
           setIsHashing(false);
@@ -66,7 +77,9 @@ export default function App() {
       setPageCounts(null);
       setHashes({ original: null, modified: null });
     }
-  }, [originalFile, modifiedFile]);
+    // Los textos extraídos dependen de los archivos; invalidamos la caché cuando cambian.
+    setExtractedTexts(null);
+  }, [originalFile, modifiedFile, t]);
 
   useEffect(() => {
     if (pageCounts) {
@@ -88,7 +101,7 @@ export default function App() {
 
   const handleCompare = useCallback(async () => {
     if (!originalFile || !modifiedFile || !pageMapping) {
-      setError('Por favor, seleccione los PDF y configure el mapeo de páginas.');
+      setError(t('app.errors.missingInputs'));
       return;
     }
 
@@ -98,10 +111,31 @@ export default function App() {
     setVisualDiff(null);
 
     try {
-      const [originalPages, modifiedPages] = await Promise.all([
-        extractTextFromPdf(originalFile),
-        extractTextFromPdf(modifiedFile),
-      ]);
+      let [originalPages, modifiedPages] = extractedTexts
+        ? [extractedTexts.original, extractedTexts.modified]
+        : await Promise.all([
+            extractTextFromPdf(originalFile),
+            extractTextFromPdf(modifiedFile),
+          ]);
+
+      if (enableOcr) {
+        const pagesToOcrOriginal = pickPagesNeedingOcr(originalPages);
+        const pagesToOcrModified = pickPagesNeedingOcr(modifiedPages);
+        if (pagesToOcrOriginal.length || pagesToOcrModified.length) {
+          setOcrStatus(
+            t('app.ocr.running', { count: pagesToOcrOriginal.length + pagesToOcrModified.length })
+          );
+          const [origOcr, modOcr] = await Promise.all([
+            runOcrOnPages(originalFile, pagesToOcrOriginal),
+            runOcrOnPages(modifiedFile, pagesToOcrModified),
+          ]);
+          originalPages = originalPages.map((t, i) => origOcr.get(i + 1) ?? t);
+          modifiedPages = modifiedPages.map((t, i) => modOcr.get(i + 1) ?? t);
+        }
+      }
+
+      setExtractedTexts({ original: originalPages, modified: modifiedPages });
+      setOcrStatus(null);
 
       const options: TextComparisonOptions = {
         includeUnmappedPages,
@@ -112,7 +146,14 @@ export default function App() {
         },
       };
 
-      const comparison = buildTextComparison(originalPages, modifiedPages, pageMapping, options);
+      setProgress({ current: 0, total: pageMapping.length });
+      const comparison = await buildTextComparisonAsync(
+        originalPages,
+        modifiedPages,
+        pageMapping,
+        options,
+        (p) => setProgress({ current: p.current, total: p.total })
+      );
 
       setTextDiff(comparison.diffResults);
       setComparisonSummary(comparison.summary);
@@ -123,9 +164,11 @@ export default function App() {
 
     } catch (err) {
       console.error('Comparación fallida:', err);
-      setError('Ocurrió un error al procesar los PDF. Por favor, asegúrese de que sean archivos válidos.');
+      setError(t('app.errors.compareFailed'));
     } finally {
       setIsLoading(false);
+      setProgress(null);
+      setOcrStatus(null);
     }
   }, [
     originalFile,
@@ -135,7 +178,24 @@ export default function App() {
     ignoreCase,
     ignoreWhitespace,
     ignoreLineBreaks,
+    extractedTexts,
+    enableOcr,
+    t,
   ]);
+
+  const handleSuggestMapping = useCallback(async (): Promise<PageMapping | null> => {
+    if (!originalFile || !modifiedFile) return null;
+    let texts = extractedTexts;
+    if (!texts) {
+      const [originalPages, modifiedPages] = await Promise.all([
+        extractTextFromPdf(originalFile),
+        extractTextFromPdf(modifiedFile),
+      ]);
+      texts = { original: originalPages, modified: modifiedPages };
+      setExtractedTexts(texts);
+    }
+    return suggestPageMapping(texts.original, texts.modified);
+  }, [originalFile, modifiedFile, extractedTexts]);
 
   const handleReset = () => {
     setOriginalFile(null);
@@ -149,6 +209,7 @@ export default function App() {
     setPageMapping(null);
     setHashes({ original: null, modified: null });
     setComparisonSummary(null);
+    setExtractedTexts(null);
   };
 
   const hasResults = textDiff !== null || visualDiff !== null;
@@ -174,8 +235,10 @@ export default function App() {
         pageMapping
       );
 
+      const localeTag = locale === 'en' ? 'en-US' : 'es-ES';
       downloadComparisonReport({
-        createdAt: new Date().toLocaleString('es-ES'),
+        createdAt: new Date().toLocaleString(localeTag),
+        locale,
         originalFileName: originalFile.name,
         modifiedFileName: modifiedFile.name,
         hashes,
@@ -188,7 +251,7 @@ export default function App() {
       });
     } catch (err) {
       console.error('Error exportando informe:', err);
-      setError('No se pudo exportar el informe con diferencias visuales.');
+      setError(t('app.errors.exportFailed'));
     } finally {
       setIsExportingReport(false);
     }
@@ -204,6 +267,8 @@ export default function App() {
     pageCounts,
     comparisonSummary,
     textDiff,
+    t,
+    locale,
   ]);
 
   return (
@@ -218,21 +283,24 @@ export default function App() {
               <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
               <div className="flex items-center space-x-2">
                 <DocumentIcon className="h-7 w-7 text-indigo-600" />
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">PDF Diferencias Documentos</h1>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">{t('app.title')}</h1>
               </div>
             </div>
-            {hasResults && (
-              <button
-                onClick={handleReset}
-                className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-              >
-                <ArrowPathIcon className="h-5 w-5" />
-                <span>Comenzar Nueva Comparación</span>
-              </button>
-            )}
-            <a href="https://www.izertis.com/es/" target='_blank'>
-              <LogoIzertis className="h-10 w-auto" />
-            </a>
+            <div className="flex items-center gap-3">
+              {hasResults && (
+                <button
+                  onClick={handleReset}
+                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
+                  <ArrowPathIcon className="h-5 w-5" />
+                  <span>{t('app.newComparison')}</span>
+                </button>
+              )}
+              <LanguageSelector />
+              <a href="https://www.izertis.com/es/" target='_blank'>
+                <LogoIzertis className="h-10 w-auto" />
+              </a>
+            </div>
           </div>
         </div>
       </header>
@@ -240,21 +308,19 @@ export default function App() {
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         {!hasResults && !isLoading && (
           <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-center mb-2">PDF Comparison Tool</h2>
-            <p className="text-center text-gray-600 mb-8">
-              Carga una versión original y una modificada de tu PDF para ver una comparación detallada de los cambios en el texto y el diseño.
-            </p>
+            <h2 className="text-2xl font-semibold text-center mb-2">{t('app.heading')}</h2>
+            <p className="text-center text-gray-600 mb-8">{t('app.uploadHint')}</p>
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <FileUploader
                 file={originalFile}
                 onFileSelect={setOriginalFile}
-                label="Documento Original"
+                label={t('app.uploadOriginal')}
                 id="original-file"
               />
               <FileUploader
                 file={modifiedFile}
                 onFileSelect={setModifiedFile}
-                label="Documento Modificado"
+                label={t('app.uploadModified')}
                 id="modified-file"
               />
             </div>
@@ -262,7 +328,7 @@ export default function App() {
             {isHashing && (
               <div className="flex items-center justify-center p-4 mb-4 bg-indigo-50 rounded-lg text-indigo-700">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-700 mr-3"></div>
-                <span className="text-sm font-medium">Calculando firmas digitales (SHA-512)...</span>
+                <span className="text-sm font-medium">{t('app.hashing')}</span>
               </div>
             )}
 
@@ -275,12 +341,8 @@ export default function App() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-amber-700 font-semibold">
-                      Los documentos son idénticos.
-                    </p>
-                    <p className="text-sm text-amber-600">
-                      Las firmas digitales coinciden exactamente. No hay cambios que comparar.
-                    </p>
+                    <p className="text-sm text-amber-700 font-semibold">{t('app.identicalTitle')}</p>
+                    <p className="text-sm text-amber-600">{t('app.identicalBody')}</p>
                   </div>
                 </div>
               </div>
@@ -292,6 +354,7 @@ export default function App() {
                   pageCounts={pageCounts}
                   mapping={pageMapping}
                   onMappingChange={setPageMapping}
+                  onSuggestMapping={handleSuggestMapping}
                 />
 
                 <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
@@ -303,17 +366,13 @@ export default function App() {
                       className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <span>
-                      <span className="block text-sm font-semibold text-gray-800">
-                        Incluir páginas no mapeadas en comparación de texto
-                      </span>
-                      <span className="block text-sm text-gray-600">
-                        Si está activado, se mostrarán como eliminadas/añadidas las páginas fuera del mapeo o marcadas con 0.
-                      </span>
+                      <span className="block text-sm font-semibold text-gray-800">{t('app.settings.includeUnmapped')}</span>
+                      <span className="block text-sm text-gray-600">{t('app.settings.includeUnmappedBody')}</span>
                     </span>
                   </label>
 
                   <div className="mt-4 border-t border-gray-200 pt-4">
-                    <p className="text-sm font-semibold text-gray-800 mb-2">Normalización de texto</p>
+                    <p className="text-sm font-semibold text-gray-800 mb-2">{t('app.settings.normalization')}</p>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                         <input
@@ -322,7 +381,7 @@ export default function App() {
                           onChange={(e) => setIgnoreCase(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        Ignorar mayúsculas/minúsculas
+                        {t('app.settings.ignoreCase')}
                       </label>
                       <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                         <input
@@ -331,7 +390,7 @@ export default function App() {
                           onChange={(e) => setIgnoreWhitespace(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        Normalizar espacios
+                        {t('app.settings.ignoreWhitespace')}
                       </label>
                       <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                         <input
@@ -340,9 +399,24 @@ export default function App() {
                           onChange={(e) => setIgnoreLineBreaks(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        Ignorar saltos de línea
+                        {t('app.settings.ignoreLineBreaks')}
                       </label>
                     </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <label className="inline-flex items-start gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={enableOcr}
+                        onChange={(e) => setEnableOcr(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-gray-800">{t('app.settings.enableOcr')}</span>
+                        <span className="block text-sm text-gray-600">{t('app.settings.enableOcrBody')}</span>
+                      </span>
+                    </label>
                   </div>
                 </div>
               </>
@@ -356,7 +430,7 @@ export default function App() {
                 disabled={!originalFile || !modifiedFile || isLoading || isHashing || !pageMapping || filesAreIdentical}
                 className="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105"
               >
-                {isLoading ? 'Comparando...' : isHashing ? 'Verificando...' : 'Comparar Documentos'}
+                {isLoading ? t('app.comparing') : isHashing ? t('app.verifying') : t('app.compareButton')}
               </button>
             </div>
           </div>
@@ -365,7 +439,21 @@ export default function App() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center h-64">
             <Spinner />
-            <p className="text-lg font-medium text-gray-700 mt-4">Analizando tus documentos...</p>
+            <p className="text-lg font-medium text-gray-700 mt-4">{t('app.analyzing')}</p>
+            {ocrStatus && <p className="mt-2 text-sm text-indigo-700">{ocrStatus}</p>}
+            {progress && progress.total > 0 && (
+              <div className="w-64 mt-4">
+                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-600 transition-all"
+                    style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500 text-center">
+                  {t('app.progressPage', { current: progress.current, total: progress.total })}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -378,7 +466,7 @@ export default function App() {
                 disabled={isExportingReport}
                 className="px-4 py-2 text-sm font-semibold rounded-md border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isExportingReport ? 'Generando informe visual...' : 'Exportar informe'}
+                {isExportingReport ? t('app.exportingReport') : t('app.exportReport')}
               </button>
             </div>
             <ComparisonView
