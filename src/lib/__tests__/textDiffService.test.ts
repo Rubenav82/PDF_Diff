@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeText, buildTextComparison } from '../textDiffService';
-import type { TextComparisonOptions } from '../../types/types';
+import { normalizeText, buildTextComparison, buildTextComparisonAsync } from '../textDiffService';
+import type { TextComparisonOptions, PageMapping } from '../../types/types';
 
 const defaultNormalization: TextComparisonOptions['normalization'] = {
   ignoreLineBreaks: false,
@@ -308,5 +308,43 @@ describe('buildTextComparison', () => {
 
       expect(summary.unchangedPairs).toBe(1);
     });
+  });
+});
+
+// ─── buildTextComparisonAsync ─────────────────────────────────────────────────
+
+describe('buildTextComparisonAsync', () => {
+  const mapping: PageMapping = [
+    { originalPage: 1, modifiedPage: 1 },
+    { originalPage: 2, modifiedPage: 2 },
+    { originalPage: 3, modifiedPage: 0 },
+  ];
+
+  it('produces the same summary and diff structure as the sync version', async () => {
+    const original = ['hello world', 'contract clause A', 'deleted only here'];
+    const modified = ['hello there', 'contract clause A'];
+    const sync = buildTextComparison(original, modified, mapping, defaultOptions);
+    const async_ = await buildTextComparisonAsync(original, modified, mapping, defaultOptions);
+
+    expect(async_.summary).toEqual(sync.summary);
+    expect(async_.diffResults.length).toBe(sync.diffResults.length);
+    expect(async_.diffResults.map((r) => r.kind)).toEqual(sync.diffResults.map((r) => r.kind));
+  });
+
+  it('reports progress as pages are processed', async () => {
+    const calls: Array<{ current: number; total: number }> = [];
+    await buildTextComparisonAsync(
+      ['a', 'b', 'c'],
+      ['a', 'b', 'c'],
+      [
+        { originalPage: 1, modifiedPage: 1 },
+        { originalPage: 2, modifiedPage: 2 },
+        { originalPage: 3, modifiedPage: 3 },
+      ],
+      defaultOptions,
+      (p) => calls.push({ current: p.current, total: p.total })
+    );
+    expect(calls).toHaveLength(3);
+    expect(calls[calls.length - 1]).toEqual({ current: 3, total: 3 });
   });
 });

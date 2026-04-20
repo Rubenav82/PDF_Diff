@@ -340,4 +340,58 @@ describe('downloadComparisonReport', () => {
     expect(captured.html).toContain('4');  // mappedPairs
     expect(captured.html).toContain('2');  // changedPairs / unchangedPairs
   });
+
+  it('renders the report in English when locale is "en"', () => {
+    const captured = captureDownload();
+    downloadComparisonReport({
+      createdAt: '2024-01-01',
+      originalFileName: 'a.pdf',
+      modifiedFileName: 'b.pdf',
+      hashes: { original: 'h1', modified: 'h2' },
+      pageCounts: { original: 1, modified: 1 },
+      mapping: baseMapping,
+      options: baseOptions,
+      summary: baseSummary,
+      textDiff: [],
+      visualDiffEntries: [],
+      locale: 'en',
+    });
+
+    expect(captured.html).toContain('<html lang="en">');
+    expect(captured.html).toContain('PDF comparison report');
+    expect(captured.html).toContain('Documents');
+    expect(captured.html).toContain('Executive summary');
+    expect(captured.html).toContain('No differences');
+    expect(captured.html).toContain('No visual data');
+    // ES-only strings should not appear
+    expect(captured.html).not.toContain('Informe de comparacion PDF');
+    expect(captured.html).not.toContain('Sin diferencias');
+  });
+
+  it('renders English "Added" label for added pages when locale is "en"', () => {
+    const captured = captureDownload();
+    const added: TextDiffResult = {
+      page: 0,
+      modifiedPage: 3,
+      kind: 'added',
+      diff: [{ value: 'new text', added: true, removed: false, count: 8 }],
+    };
+    downloadComparisonReport({
+      createdAt: '2024-01-01',
+      originalFileName: 'a.pdf',
+      modifiedFileName: 'b.pdf',
+      hashes: { original: null, modified: null },
+      pageCounts: null,
+      mapping: [],
+      options: baseOptions,
+      summary: baseSummary,
+      textDiff: [added],
+      visualDiffEntries: [],
+      locale: 'en',
+    });
+
+    // "Added" appears both as the kind label and as a section title — either is fine.
+    expect(captured.html).toMatch(/>Added</);
+    expect(captured.html).not.toContain('Anadida');
+  });
 });

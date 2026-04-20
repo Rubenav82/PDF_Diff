@@ -1,29 +1,32 @@
 import React from 'react';
 import type { TextDiffResult } from '../../types/types';
+import { useT } from '../../i18n/useT';
 
 interface TextDiffViewProps {
   diffResults: TextDiffResult[] | null;
 }
 
 export const TextDiffView: React.FC<TextDiffViewProps> = ({ diffResults }) => {
+  const t = useT();
+
   const getTitle = (page: number, modifiedPage: number | undefined, kind: TextDiffResult['kind']) => {
     if (kind === 'deleted') {
-      return `Página ${page} eliminada en documento modificado`;
+      return t('textDiff.deleted', { page });
     }
     if (kind === 'added') {
-      return `Página ${modifiedPage ?? '-'} añadida en documento modificado`;
+      return t('textDiff.added', { page: modifiedPage ?? '-' });
     }
     if (modifiedPage && modifiedPage !== page) {
-      return `Página original ${page} comparada con página modificada ${modifiedPage}`;
+      return t('textDiff.comparedWith', { page, modified: modifiedPage });
     }
-    return `Página ${page}`;
+    return t('textDiff.pageHeader', { page });
   };
 
   if (!diffResults || diffResults.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">No se encontraron diferencias textuales</h3>
-        <p className="mt-1 text-sm text-gray-500">El contenido textual de ambos documentos aparéntemente son idénticos.</p>
+        <h3 className="text-lg font-medium text-gray-900">{t('textDiff.emptyTitle')}</h3>
+        <p className="mt-1 text-sm text-gray-500">{t('textDiff.emptyBody')}</p>
       </div>
     );
   }

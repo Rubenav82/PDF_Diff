@@ -1,23 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { PageMapping } from '../../types/types';
 import { ArrowRightIcon } from '../ui/icons';
+import { useT } from '../../i18n/useT';
 
 interface PageMapperProps {
   pageCounts: { original: number; modified: number };
   mapping: PageMapping;
   onMappingChange: (mapping: PageMapping) => void;
+  onSuggestMapping?: () => Promise<PageMapping | null>;
 }
 
-export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onMappingChange }) => {
+export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onMappingChange, onSuggestMapping }) => {
+  const t = useT();
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
 
   const handleMapChange = (originalPage: number, newModifiedPageStr: string) => {
     const newModifiedPage = parseInt(newModifiedPageStr, 10);
     // Permitir campo vacío, pero tratarlo como 0. Validar si no es un número.
     const valueToSet = isNaN(newModifiedPage) ? 0 : newModifiedPage;
 
-    const newMapping = mapping.map(entry => 
-      entry.originalPage === originalPage 
-        ? { ...entry, modifiedPage: valueToSet } 
+    const newMapping = mapping.map(entry =>
+      entry.originalPage === originalPage
+        ? { ...entry, modifiedPage: valueToSet }
         : entry
     );
     onMappingChange(newMapping);
@@ -69,51 +74,81 @@ export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onM
   const handleSetAllDeleted = () => {
     onMappingChange(mapping.map((entry) => ({ ...entry, modifiedPage: 0 })));
   };
-  
+
+  const handleSuggestMapping = async () => {
+    if (!onSuggestMapping) return;
+    setIsSuggesting(true);
+    setSuggestError(null);
+    try {
+      const suggested = await onSuggestMapping();
+      if (suggested) {
+        onMappingChange(suggested);
+      }
+    } catch (err) {
+      console.error('Fallo al sugerir mapeo automático:', err);
+      setSuggestError(t('mapper.suggestError'));
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const unmappedPages = getUnmappedModifiedPages();
   const duplicatedPages = getDuplicatedModifiedPages();
 
   return (
     <div className="my-8 p-6 bg-gray-50 border border-gray-200 rounded-lg">
-      <h3 className="text-xl font-semibold mb-4 text-gray-800">Configurar Mapeo de Páginas</h3>
-      <p className="text-sm text-gray-600 mb-6">
-        Ajusta qué página del documento modificado se debe comparar con cada página del original. Ingresa '0' si una página fue eliminada.
-      </p>
+      <h3 className="text-xl font-semibold mb-4 text-gray-800">{t('mapper.title')}</h3>
+      <p className="text-sm text-gray-600 mb-6">{t('mapper.instructions')}</p>
       <div className="mb-5 flex flex-wrap gap-2">
+        {onSuggestMapping && (
+          <button
+            type="button"
+            onClick={handleSuggestMapping}
+            disabled={isSuggesting}
+            className="px-3 py-1.5 text-sm font-medium rounded-md border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isSuggesting ? t('mapper.analyzing') : t('mapper.suggest')}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleAutoMapOneToOne}
           className="px-3 py-1.5 text-sm font-medium rounded-md border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
         >
-          Mapeo 1:1
+          {t('mapper.oneToOne')}
         </button>
         <button
           type="button"
           onClick={() => handleShiftMapping(-1)}
           className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
         >
-          Desplazar -1
+          {t('mapper.shiftMinus')}
         </button>
         <button
           type="button"
           onClick={() => handleShiftMapping(1)}
           className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
         >
-          Desplazar +1
+          {t('mapper.shiftPlus')}
         </button>
         <button
           type="button"
           onClick={handleSetAllDeleted}
           className="px-3 py-1.5 text-sm font-medium rounded-md border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100"
         >
-          Marcar todas como eliminadas
+          {t('mapper.markAllDeleted')}
         </button>
       </div>
+      {suggestError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">{suggestError}</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
         {mapping.map(({ originalPage, modifiedPage }) => (
           <div key={originalPage} className="flex items-center space-x-3">
             <label htmlFor={`map-orig-${originalPage}`} className="w-28 text-sm font-medium text-gray-700 shrink-0">
-              Original Pág. {originalPage}
+              {t('mapper.originalPageLabel', { n: originalPage })}
             </label>
             <ArrowRightIcon className="h-5 w-5 text-gray-400" />
             <select
@@ -125,12 +160,12 @@ export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onM
                   ? 'border-amber-400 bg-amber-50 text-amber-900'
                   : 'border-gray-300'
               }`}
-              aria-label={`Página modificada para la página original ${originalPage}`}
+              aria-label={t('mapper.selectAria', { n: originalPage })}
             >
-              <option value={0}>Eliminada (0)</option>
+              <option value={0}>{t('mapper.deletedOption')}</option>
               {Array.from({ length: pageCounts.modified }, (_, i) => i + 1).map((page) => (
                 <option key={page} value={page}>
-                  Pág. {page}
+                  {t('mapper.pageOption', { n: page })}
                 </option>
               ))}
             </select>
@@ -140,7 +175,7 @@ export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onM
       {duplicatedPages.size > 0 && (
         <div className="mt-6 p-3 bg-amber-100 border border-amber-200 rounded-md">
           <p className="text-sm text-amber-800">
-            <span className="font-semibold">Mapeos duplicados detectados:</span>{' '}
+            <span className="font-semibold">{t('mapper.duplicates')}</span>{' '}
             {Array.from(duplicatedPages).join(', ')}
           </p>
         </div>
@@ -148,7 +183,7 @@ export const PageMapper: React.FC<PageMapperProps> = ({ pageCounts, mapping, onM
       {unmappedPages.length > 0 && (
         <div className="mt-6 p-3 bg-blue-100 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800">
-                <span className="font-semibold">Páginas nuevas (no mapeadas) en doc. modificado:</span> {unmappedPages.join(', ')}
+                <span className="font-semibold">{t('mapper.newPages')}</span> {unmappedPages.join(', ')}
             </p>
         </div>
       )}

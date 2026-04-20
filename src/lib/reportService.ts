@@ -5,6 +5,8 @@ import type {
   TextDiffResult,
   VisualDiffReportEntry,
 } from '../types/types';
+import type { Locale, MessageKey } from '../i18n/messages';
+import { translate } from '../i18n/messages';
 
 interface ReportData {
   createdAt: string;
@@ -17,6 +19,7 @@ interface ReportData {
   summary: ComparisonSummary | null;
   textDiff: TextDiffResult[] | null;
   visualDiffEntries: VisualDiffReportEntry[];
+  locale?: Locale;
 }
 
 const escapeHtml = (value: string): string => {
@@ -49,7 +52,10 @@ const trailingContext = (value: string, maxLength: number): string => {
   return `${normalized.slice(0, maxLength)}...`;
 };
 
-const formatDiffHtml = (diff: TextDiffResult['diff']): string => {
+const formatDiffHtml = (
+  diff: TextDiffResult['diff'],
+  t: (key: MessageKey, params?: Record<string, string | number>) => string
+): string => {
   const maxChangeBlocks = 12;
   const initialVisibleBlocks = 3;
   const contextChars = 70;
@@ -85,7 +91,7 @@ const formatDiffHtml = (diff: TextDiffResult['diff']): string => {
   }
 
   if (blocks.length === 0) {
-    return '<span class="muted">(sin contenido textual)</span>';
+    return `<span class="muted">${escapeHtml(t('report.emptyContent'))}</span>`;
   }
 
   if (blocks.length <= initialVisibleBlocks) {
@@ -94,21 +100,25 @@ const formatDiffHtml = (diff: TextDiffResult['diff']): string => {
 
   const visible = blocks.slice(0, initialVisibleBlocks).join('');
   const hidden = blocks.slice(initialVisibleBlocks).join('');
-  return `${visible}<details class="diff-more"><summary>Ver más cambios (${blocks.length - initialVisibleBlocks})</summary>${hidden}</details>`;
+  return `${visible}<details class="diff-more"><summary>${escapeHtml(t('report.moreChanges', { n: blocks.length - initialVisibleBlocks }))}</summary>${hidden}</details>`;
 };
 
 export function downloadComparisonReport(data: ReportData): void {
+  const locale: Locale = data.locale ?? 'es';
+  const t = (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params);
+  const numberLocaleTag = locale === 'en' ? 'en-US' : 'es-ES';
+
   const summary = data.summary;
   const textDiffRows = (data.textDiff ?? [])
     .map((entry) => {
       const typeLabel = entry.kind === 'added'
-        ? 'Anadida'
+        ? t('report.kind.added')
         : entry.kind === 'deleted'
-        ? 'Eliminada'
-        : 'Cambiada';
+        ? t('report.kind.deleted')
+        : t('report.kind.changed');
       const originalLabel = entry.page > 0 ? String(entry.page) : '-';
       const modifiedLabel = entry.modifiedPage && entry.modifiedPage > 0 ? String(entry.modifiedPage) : '-';
-      const snippet = formatDiffHtml(entry.diff);
+      const snippet = formatDiffHtml(entry.diff, t);
 
       return `
         <tr>
@@ -132,19 +142,22 @@ export function downloadComparisonReport(data: ReportData): void {
         <tr>
           <td>${entry.originalPage}</td>
           <td>${entry.modifiedPage}</td>
-          <td>${entry.diffPixels.toLocaleString('es-ES')}</td>
+          <td>${entry.diffPixels.toLocaleString(numberLocaleTag)}</td>
           <td>${diffPercent}%</td>
-          <td>${entry.thumbnailDataUrl ? `<img class="thumb" src="${entry.thumbnailDataUrl}" alt="Diff visual p${entry.originalPage}-${entry.modifiedPage}" />` : '<span class="muted">Sin miniatura</span>'}</td>
+          <td>${entry.thumbnailDataUrl ? `<img class="thumb" src="${entry.thumbnailDataUrl}" alt="Diff p${entry.originalPage}-${entry.modifiedPage}" />` : `<span class="muted">${escapeHtml(t('report.visual.noThumb'))}</span>`}</td>
         </tr>
       `;
     })
     .join('');
 
+  const yesLabel = t('report.yes');
+  const noLabel = t('report.no');
+
   const html = `<!doctype html>
-<html lang="es">
+<html lang="${locale}">
 <head>
   <meta charset="utf-8" />
-  <title>Informe PDF Diff</title>
+  <title>${escapeHtml(t('report.title'))}</title>
   <style>
     body { font-family: Segoe UI, Arial, sans-serif; color: #1f2937; margin: 24px; }
     h1, h2 { margin: 0 0 10px 0; }
@@ -167,48 +180,48 @@ export function downloadComparisonReport(data: ReportData): void {
   </style>
 </head>
 <body>
-  <h1>Informe de comparacion PDF</h1>
-  <p class="muted">Generado: ${escapeHtml(data.createdAt)}</p>
+  <h1>${escapeHtml(t('report.heading'))}</h1>
+  <p class="muted">${escapeHtml(t('report.generated', { date: data.createdAt }))}</p>
 
   <div class="card">
-    <h2>Documentos</h2>
+    <h2>${escapeHtml(t('report.docs.title'))}</h2>
     <div class="grid">
-      <div><strong>Original:</strong> ${escapeHtml(data.originalFileName)}</div>
-      <div><strong>Modificado:</strong> ${escapeHtml(data.modifiedFileName)}</div>
-      <div><strong>Hash original:</strong> <span class="hash">${escapeHtml(data.hashes.original ?? '-')}</span></div>
-      <div><strong>Hash modificado:</strong> <span class="hash">${escapeHtml(data.hashes.modified ?? '-')}</span></div>
-      <div><strong>Paginas original:</strong> ${data.pageCounts?.original ?? '-'}</div>
-      <div><strong>Paginas modificado:</strong> ${data.pageCounts?.modified ?? '-'}</div>
+      <div><strong>${escapeHtml(t('report.docs.original'))}</strong> ${escapeHtml(data.originalFileName)}</div>
+      <div><strong>${escapeHtml(t('report.docs.modified'))}</strong> ${escapeHtml(data.modifiedFileName)}</div>
+      <div><strong>${escapeHtml(t('report.docs.originalHash'))}</strong> <span class="hash">${escapeHtml(data.hashes.original ?? '-')}</span></div>
+      <div><strong>${escapeHtml(t('report.docs.modifiedHash'))}</strong> <span class="hash">${escapeHtml(data.hashes.modified ?? '-')}</span></div>
+      <div><strong>${escapeHtml(t('report.docs.pagesOriginal'))}</strong> ${data.pageCounts?.original ?? '-'}</div>
+      <div><strong>${escapeHtml(t('report.docs.pagesModified'))}</strong> ${data.pageCounts?.modified ?? '-'}</div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Opciones de comparacion</h2>
+    <h2>${escapeHtml(t('report.opts.title'))}</h2>
     <div class="grid">
-      <div><strong>Incluir no mapeadas:</strong> ${data.options.includeUnmappedPages ? 'Si' : 'No'}</div>
-      <div><strong>Ignorar mayusculas/minusculas:</strong> ${data.options.normalization.ignoreCase ? 'Si' : 'No'}</div>
-      <div><strong>Normalizar espacios:</strong> ${data.options.normalization.ignoreWhitespace ? 'Si' : 'No'}</div>
-      <div><strong>Ignorar saltos de linea:</strong> ${data.options.normalization.ignoreLineBreaks ? 'Si' : 'No'}</div>
+      <div><strong>${escapeHtml(t('report.opts.includeUnmapped'))}</strong> ${data.options.includeUnmappedPages ? yesLabel : noLabel}</div>
+      <div><strong>${escapeHtml(t('report.opts.ignoreCase'))}</strong> ${data.options.normalization.ignoreCase ? yesLabel : noLabel}</div>
+      <div><strong>${escapeHtml(t('report.opts.ignoreWhitespace'))}</strong> ${data.options.normalization.ignoreWhitespace ? yesLabel : noLabel}</div>
+      <div><strong>${escapeHtml(t('report.opts.ignoreLineBreaks'))}</strong> ${data.options.normalization.ignoreLineBreaks ? yesLabel : noLabel}</div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Resumen ejecutivo</h2>
+    <h2>${escapeHtml(t('report.summary.title'))}</h2>
     <div class="grid">
-      <div><strong>Pares mapeados:</strong> ${summary?.mappedPairs ?? 0}</div>
-      <div><strong>Pares con cambios:</strong> ${summary?.changedPairs ?? 0}</div>
-      <div><strong>Pares sin cambios:</strong> ${summary?.unchangedPairs ?? 0}</div>
-      <div><strong>Paginas eliminadas:</strong> ${summary?.deletedPages ?? 0}</div>
-      <div><strong>Paginas anadidas:</strong> ${summary?.addedPages ?? 0}</div>
-      <div><strong>Total diferencias textuales:</strong> ${(data.textDiff ?? []).length}</div>
+      <div><strong>${escapeHtml(t('report.summary.mapped'))}</strong> ${summary?.mappedPairs ?? 0}</div>
+      <div><strong>${escapeHtml(t('report.summary.changed'))}</strong> ${summary?.changedPairs ?? 0}</div>
+      <div><strong>${escapeHtml(t('report.summary.unchanged'))}</strong> ${summary?.unchangedPairs ?? 0}</div>
+      <div><strong>${escapeHtml(t('report.summary.deleted'))}</strong> ${summary?.deletedPages ?? 0}</div>
+      <div><strong>${escapeHtml(t('report.summary.added'))}</strong> ${summary?.addedPages ?? 0}</div>
+      <div><strong>${escapeHtml(t('report.summary.textDiffs'))}</strong> ${(data.textDiff ?? []).length}</div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Mapeo aplicado</h2>
+    <h2>${escapeHtml(t('report.mapping.title'))}</h2>
     <table>
       <thead>
-        <tr><th>Pagina original</th><th>Pagina modificada</th></tr>
+        <tr><th>${escapeHtml(t('report.mapping.orig'))}</th><th>${escapeHtml(t('report.mapping.mod'))}</th></tr>
       </thead>
       <tbody>
         ${mappingRows}
@@ -217,25 +230,25 @@ export function downloadComparisonReport(data: ReportData): void {
   </div>
 
   <div class="card">
-    <h2>Diferencias textuales</h2>
+    <h2>${escapeHtml(t('report.text.title'))}</h2>
     <table>
       <thead>
-        <tr><th>Tipo</th><th>Pag. original</th><th>Pag. modificada</th><th>Cambios detectados (con contexto)</th></tr>
+        <tr><th>${escapeHtml(t('report.text.type'))}</th><th>${escapeHtml(t('report.text.pOrig'))}</th><th>${escapeHtml(t('report.text.pMod'))}</th><th>${escapeHtml(t('report.text.changes'))}</th></tr>
       </thead>
       <tbody>
-        ${textDiffRows || '<tr><td colspan="4">Sin diferencias</td></tr>'}
+        ${textDiffRows || `<tr><td colspan="4">${escapeHtml(t('report.text.none'))}</td></tr>`}
       </tbody>
     </table>
   </div>
 
   <div class="card">
-    <h2>Diferencias visuales</h2>
+    <h2>${escapeHtml(t('report.visual.title'))}</h2>
     <table>
       <thead>
-        <tr><th>Pag. original</th><th>Pag. modificada</th><th>Pixeles distintos</th><th>% diferencia</th><th>Miniatura diff</th></tr>
+        <tr><th>${escapeHtml(t('report.text.pOrig'))}</th><th>${escapeHtml(t('report.text.pMod'))}</th><th>${escapeHtml(t('report.visual.pixels'))}</th><th>${escapeHtml(t('report.visual.percent'))}</th><th>${escapeHtml(t('report.visual.thumbnail'))}</th></tr>
       </thead>
       <tbody>
-        ${visualRows || '<tr><td colspan="5">Sin datos visuales</td></tr>'}
+        ${visualRows || `<tr><td colspan="5">${escapeHtml(t('report.visual.none'))}</td></tr>`}
       </tbody>
     </table>
   </div>

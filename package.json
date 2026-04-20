@@ -17,7 +17,8 @@
     "pdfjs-dist": "4.10.38",
     "pixelmatch": "5.3.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/diff": "^5.0.8",
