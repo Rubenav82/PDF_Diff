@@ -30,7 +30,7 @@ const es = {
   'app.settings.ignoreLineBreaks': 'Ignorar saltos de línea',
   'app.settings.enableOcr': 'Habilitar OCR para páginas escaneadas (español + inglés)',
   'app.settings.enableOcrBody':
-    'Cuando pdfjs no extrae texto de una página (p. ej., contratos firmados escaneados), se usará reconocimiento óptico. El proceso descarga ~2\u00A0MB y puede tardar varios segundos por página.',
+    'Cuando no se extrae texto de una página (p. ej., contratos firmados escaneados), se usará reconocimiento óptico. El proceso descarga ~2\u00A0MB y puede tardar varios segundos por página.',
   'app.errors.initialLoad': 'No se pudieron procesar los archivos para la comprobación inicial.',
   'app.errors.missingInputs': 'Por favor, seleccione los PDF y configure el mapeo de páginas.',
   'app.errors.compareFailed':
@@ -191,7 +191,7 @@ const en: Record<MessageKey, string> = {
   'app.settings.ignoreLineBreaks': 'Ignore line breaks',
   'app.settings.enableOcr': 'Enable OCR for scanned pages (Spanish + English)',
   'app.settings.enableOcrBody':
-    'When pdfjs cannot extract text from a page (e.g. scanned signed contracts), optical character recognition is used. It downloads ~2\u00A0MB and can take several seconds per page.',
+    'When cannot extract text from a page (e.g. scanned signed contracts), optical character recognition is used. It downloads ~2\u00A0MB and can take several seconds per page.',
   'app.errors.initialLoad': 'Could not process the files for the initial check.',
   'app.errors.missingInputs': 'Please select the PDFs and configure the page mapping.',
   'app.errors.compareFailed':
