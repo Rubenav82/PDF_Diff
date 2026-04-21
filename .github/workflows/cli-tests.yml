@@ -1,0 +1,59 @@
+name: CLI Tests
+
+on:
+  push:
+    branches: [main, sprint3]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/cli-tests.yml'
+  pull_request:
+    paths:
+      - 'packages/**'
+
+jobs:
+  test:
+    name: CLI E2E (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build core
+        run: npm run build --workspace=packages/core
+
+      - name: Build CLI
+        run: npm run build --workspace=packages/cli
+
+      - name: Generate fixtures
+        working-directory: packages/cli/fixtures
+        run: node make-fixtures.cjs
+
+      - name: Run CLI E2E tests
+        run: npm run test --workspace=packages/cli
+
+      - name: Smoke test — text diff
+        shell: bash
+        run: |
+          node packages/cli/dist/bin.js compare \
+            packages/cli/fixtures/baseline.pdf \
+            packages/cli/fixtures/modified.pdf \
+            --mode text-only --output json | grep '"version"'
+
+      - name: Smoke test — identical files exit 0
+        shell: bash
+        run: |
+          node packages/cli/dist/bin.js compare \
+            packages/cli/fixtures/baseline.pdf \
+            packages/cli/fixtures/identical.pdf \
+            --mode text-only
