@@ -1,43 +1,29 @@
-import { diffChars } from 'diff';
+export type { TextComparisonResult } from '@pdf-diff/core';
+export { normalizeText, buildTextComparison } from '@pdf-diff/core';
+
 import type {
-  ComparisonSummary,
   PageMapping,
   TextComparisonOptions,
   TextDiffResult,
+  ComparisonSummary,
 } from '../types/types';
+import { normalizeText } from '@pdf-diff/core';
 import { runTextDiff } from './workerClients';
 
-export interface TextComparisonResult {
-  diffResults: TextDiffResult[];
-  summary: ComparisonSummary;
+export interface AsyncComparisonProgress {
+  stage: 'text';
+  current: number;
+  total: number;
 }
 
-export function normalizeText(text: string, options: TextComparisonOptions['normalization']): string {
-  let normalized = text;
-
-  if (options.ignoreLineBreaks) {
-    normalized = normalized.replace(/[\r\n]+/g, ' ');
-  }
-
-  if (options.ignoreWhitespace) {
-    normalized = normalized.replace(/\s+/g, ' ').trim();
-  }
-
-  if (options.ignoreCase) {
-    normalized = normalized.toLowerCase();
-  }
-
-  return normalized;
-}
-
-export function buildTextComparison(
+export async function buildTextComparisonAsync(
   originalPages: string[],
   modifiedPages: string[],
   pageMapping: PageMapping,
-  options: TextComparisonOptions
-): TextComparisonResult {
+  options: TextComparisonOptions,
+  onProgress?: (progress: AsyncComparisonProgress) => void
+): Promise<{ diffResults: TextDiffResult[]; summary: ComparisonSummary }> {
   const diffResults: TextDiffResult[] = [];
-  // Track which pages have been explicitly mapped so we can detect unmapped originals later
   const mappedOriginalPages = new Set<number>();
   const mappedModifiedPages = new Set<number>();
   const deletedPages = new Set<number>();
@@ -53,11 +39,19 @@ export function buildTextComparison(
     totalModifiedPages: modifiedPages.length,
   };
 
+  const total = pageMapping.length;
+  let current = 0;
+
   for (const mapping of pageMapping) {
     const originalPage = mapping.originalPage;
     const modifiedPage = mapping.modifiedPage;
 
-    if (modifiedPage > 0 && modifiedPage <= modifiedPages.length && originalPage > 0 && originalPage <= originalPages.length) {
+    if (
+      modifiedPage > 0 &&
+      modifiedPage <= modifiedPages.length &&
+      originalPage > 0 &&
+      originalPage <= originalPages.length
+    ) {
       mappedOriginalPages.add(originalPage);
       mappedModifiedPages.add(modifiedPage);
       summary.mappedPairs += 1;
@@ -67,18 +61,18 @@ export function buildTextComparison(
 
       if (originalText !== modifiedText) {
         summary.changedPairs += 1;
+        const diff = await runTextDiff(originalText, modifiedText, 'chars');
         diffResults.push({
           page: originalPage,
           modifiedPage,
           kind: 'changed',
-          diff: diffChars(originalText, modifiedText),
+          diff,
         });
       } else {
         summary.unchangedPairs += 1;
       }
     }
 
-    // Convention: modifiedPage === 0 indicates the original page was deleted in the modified version
     if (options.includeUnmappedPages && modifiedPage === 0 && originalPage > 0 && originalPage <= originalPages.length) {
       const originalText = normalizeText(originalPages[originalPage - 1] || '', options.normalization);
       deletedPages.add(originalPage);
@@ -88,6 +82,9 @@ export function buildTextComparison(
         diff: [{ value: originalText, added: false, removed: true, count: originalText.length }],
       });
     }
+
+    current += 1;
+    onProgress?.({ stage: 'text', current, total });
   }
 
   if (options.includeUnmappedPages) {
@@ -107,7 +104,6 @@ export function buildTextComparison(
       if (!mappedModifiedPages.has(modifiedPage)) {
         const modifiedText = normalizeText(modifiedPages[modifiedPage - 1] || '', options.normalization);
         addedPages.add(modifiedPage);
-        // Convention: page: 0 for added pages (no corresponding original page)
         diffResults.push({
           page: 0,
           modifiedPage,

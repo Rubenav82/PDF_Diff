@@ -1,0 +1,32 @@
+{
+  "name": "@pdf-diff/cli",
+  "version": "0.1.0",
+  "description": "CLI for comparing PDF documents — text + visual diff for CI/CD pipelines",
+  "type": "module",
+  "bin": {
+    "pdf-diff": "./dist/bin.js"
+  },
+  "main": "./dist/bin.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run --reporter=verbose"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.99",
+    "@pdf-diff/core": "*",
+    "commander": "^12.1.0",
+    "pdfjs-dist": "^4.10.38"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

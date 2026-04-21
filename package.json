@@ -5,6 +5,9 @@
   "type": "module",
   "author": "Rubén Asenjo Vega",
   "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
