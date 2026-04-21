@@ -22,6 +22,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@pdf-diff/core": [
+        "./packages/core/src/index.ts"
       ]
     },
     "allowImportingTsExtensions": true,
