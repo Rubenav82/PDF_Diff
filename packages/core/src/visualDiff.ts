@@ -66,8 +66,12 @@ export async function buildVisualDiffEntries(
       renderPageToProvider(modifiedBuffer, entry.modifiedPage, provider).promise,
     ]);
 
-    const width = Math.max(origResult.canvas.width, modResult.canvas.width);
-    const height = Math.max(origResult.canvas.height, modResult.canvas.height);
+    const origW = origResult.canvas.width;
+    const origH = origResult.canvas.height;
+    const modW = modResult.canvas.width;
+    const modH = modResult.canvas.height;
+    const width = Math.max(origW, modW);
+    const height = Math.max(origH, modH);
 
     if (width <= 1 || height <= 1) {
       results.push({
@@ -81,18 +85,26 @@ export async function buildVisualDiffEntries(
       continue;
     }
 
-    // Normalize both canvases to identical dimensions before pixel comparison
-    const normalizedOrig = provider.createCanvas(width, height);
-    const normalizedMod = provider.createCanvas(width, height);
-    const normOrigCtx = normalizedOrig.getContext('2d') as CanvasRenderingContext2D | null;
-    const normModCtx = normalizedMod.getContext('2d') as CanvasRenderingContext2D | null;
-    if (!normOrigCtx || !normModCtx) throw new Error('Could not create normalization contexts.');
+    let img1: Uint8ClampedArray;
+    let img2: Uint8ClampedArray;
 
-    normOrigCtx.drawImage(origResult.canvas as unknown as HTMLImageElement, 0, 0);
-    normModCtx.drawImage(modResult.canvas as unknown as HTMLImageElement, 0, 0);
-
-    const img1 = getImageData(normalizedOrig, width, height);
-    const img2 = getImageData(normalizedMod, width, height);
+    if (origW === width && origH === height && modW === width && modH === height) {
+      // Same dimensions — read pixel data directly from the rendered canvases to avoid
+      // any canvas-to-canvas drawImage copy artefacts in non-browser environments.
+      img1 = getImageData(origResult.canvas, width, height);
+      img2 = getImageData(modResult.canvas, width, height);
+    } else {
+      // Different page sizes — pad both to the larger dimension before comparing.
+      const normalizedOrig = provider.createCanvas(width, height);
+      const normalizedMod = provider.createCanvas(width, height);
+      const normOrigCtx = normalizedOrig.getContext('2d') as CanvasRenderingContext2D | null;
+      const normModCtx = normalizedMod.getContext('2d') as CanvasRenderingContext2D | null;
+      if (!normOrigCtx || !normModCtx) throw new Error('Could not create normalization contexts.');
+      normOrigCtx.drawImage(origResult.canvas as unknown as HTMLImageElement, 0, 0);
+      normModCtx.drawImage(modResult.canvas as unknown as HTMLImageElement, 0, 0);
+      img1 = getImageData(normalizedOrig, width, height);
+      img2 = getImageData(normalizedMod, width, height);
+    }
 
     const diffCanvas = provider.createCanvas(width, height);
     const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
