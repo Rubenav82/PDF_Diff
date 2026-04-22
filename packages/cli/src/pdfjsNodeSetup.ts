@@ -5,8 +5,9 @@ import { setStandardFontDataUrl, setPdfjsVerbosityLevel } from '@pdf-diff/core';
 
 const require = createRequire(import.meta.url);
 
-const workerPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(`file://${workerPath}`).href;
+// Empty workerSrc forces fake-worker mode: all pdfjs processing runs on the main thread.
+// Real worker_threads write to fd-1 directly, bypassing any JS-level stdout/console overrides.
+pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 // NodeStandardFontDataFactory uses fs.readFile(url) — needs a plain filesystem path, not a file:// URL
 const pdfjsDir = dirname(require.resolve('pdfjs-dist/package.json'));
