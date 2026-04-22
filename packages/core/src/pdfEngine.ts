@@ -1,6 +1,13 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { CanvasProvider, CanvasLike } from './canvasProvider.js';
 
+let _standardFontDataUrl: string | undefined;
+export function setStandardFontDataUrl(url: string): void {
+  _standardFontDataUrl = url;
+}
+function docOptions(data: Uint8Array): object {
+  return _standardFontDataUrl ? { data, standardFontDataUrl: _standardFontDataUrl } : { data };
+}
 
 export interface PdfRenderResult {
   canvas: CanvasLike;
@@ -14,13 +21,13 @@ export interface PdfRenderTask {
 }
 
 export async function getPdfPageCountFromBuffer(buffer: Uint8Array): Promise<number> {
-  const loadingTask = pdfjsLib.getDocument({ data: buffer.slice() });
+  const loadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
   const pdf = await loadingTask.promise;
   return pdf.numPages;
 }
 
 export async function extractTextFromBuffer(buffer: Uint8Array): Promise<string[]> {
-  const loadingTask = pdfjsLib.getDocument({ data: buffer.slice() });
+  const loadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
   const pdf = await loadingTask.promise;
   const pageTexts: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -54,7 +61,7 @@ export function renderPageToProvider(
 
     void (async () => {
       try {
-        pdfLoadingTask = pdfjsLib.getDocument({ data: buffer.slice() });
+        pdfLoadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
         const pdf = await pdfLoadingTask.promise;
 
         if (pageNum < 1 || pageNum > pdf.numPages) {
