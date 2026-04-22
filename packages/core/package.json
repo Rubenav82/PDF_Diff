@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Rubén Asenjo Vega",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rubenav82/PDF_Diff.git",
+    "directory": "packages/core"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
