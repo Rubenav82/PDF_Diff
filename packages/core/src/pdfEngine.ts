@@ -5,8 +5,17 @@ let _standardFontDataUrl: string | undefined;
 export function setStandardFontDataUrl(url: string): void {
   _standardFontDataUrl = url;
 }
+
+let _verbosityLevel: number | undefined;
+export function setPdfjsVerbosityLevel(level: number): void {
+  _verbosityLevel = level;
+}
+
 function docOptions(data: Uint8Array): object {
-  return _standardFontDataUrl ? { data, standardFontDataUrl: _standardFontDataUrl } : { data };
+  const opts: Record<string, unknown> = { data };
+  if (_standardFontDataUrl) opts.standardFontDataUrl = _standardFontDataUrl;
+  if (_verbosityLevel !== undefined) opts.verbosity = _verbosityLevel;
+  return opts;
 }
 
 export interface PdfRenderResult {
