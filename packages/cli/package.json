@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.99",
-    "@pdf-diff/core": "0.1.5",
+    "@pdf-diff/core": "0.1.6",
     "commander": "^12.1.0",
     "pdfjs-dist": "^4.10.38"
   },
