@@ -54,7 +54,7 @@ export function renderPageToProvider(
   buffer: Uint8Array,
   pageNum: number,
   provider: CanvasProvider,
-  scale = 1.5
+  scale = 2.0
 ): PdfRenderTask {
   let pdfLoadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
   let pdfRenderTask: { promise: Promise<void>; cancel(): void } | null = null;
