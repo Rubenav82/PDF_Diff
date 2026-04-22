@@ -42,13 +42,25 @@ jobs:
         run: npm run test:run
 
       - name: Publish @pdf-diff/core
-        run: npm publish --access public --provenance
         working-directory: packages/core
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @pdf-diff/core@$VERSION version 2>/dev/null; then
+            echo "core@$VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Publish @pdf-diff/cli
-        run: npm publish --access public --provenance
         working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @pdf-diff/cli@$VERSION version 2>/dev/null; then
+            echo "cli@$VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
