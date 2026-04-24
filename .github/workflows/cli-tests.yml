@@ -47,7 +47,8 @@ jobs:
           node packages/cli/dist/bin.js compare \
             packages/cli/fixtures/baseline.pdf \
             packages/cli/fixtures/modified.pdf \
-            --mode text-only --output json | grep '"version"'
+            --mode text-only --output json > /tmp/smoke-text.json || [ $? -eq 1 ]
+          grep '"version"' /tmp/smoke-text.json
 
       - name: Smoke test — identical files exit 0
         shell: bash
