@@ -122,10 +122,23 @@ buildVisualDiffEntries(
   origBuf: Uint8Array,
   modBuf: Uint8Array,
   mapping: PageMapping[],
-  provider: CanvasProvider
+  provider: CanvasProvider,
+  pixelDiffOptions?: PixelDiffOptions
 ): Promise<VisualDiffReportEntry[]>
 
-// VisualDiffReportEntry = { originalPage, modifiedPage, diffPixels, totalPixels, diffRatio, thumbnailDataUrl? }
+// VisualDiffReportEntry = {
+//   originalPage: number,
+//   modifiedPage: number,
+//   diffPixels: number,      // pixel count where threshold exceeded
+//   totalPixels: number,     // width × height of rendered page
+//   diffRatio: number,       // diffPixels / totalPixels
+//   thumbnailDataUrl: string // PNG data URL of diff visualization (empty if render failed)
+// }
+
+// PixelDiffOptions = {
+//   threshold?: number       // sensitivity 0–1 (default 0.1 = 10% difference per pixel)
+//   includeAA?: boolean      // count anti-aliased edges (default true)
+// }
 ```
 
 ### Canvas abstraction
@@ -143,6 +156,38 @@ interface CanvasLike {
   toBuffer?(): Uint8Array;             // Node
 }
 ```
+
+## Performance & Platform-specific behavior
+
+### Render quality
+
+Pages are rendered at **2.0× scale** by default before comparing. This ensures:
+- **High accuracy**: detects even small pixel differences (e.g., text rendering changes)
+- **Performance**: 2.0× scales a 500×700px page to 1000×1400px (~5.6M pixels)
+
+To lower render scale for faster comparisons (e.g., on large batches), pass `scale: 1.5` directly:
+```ts
+renderPageToProvider(buffer, page, provider, { scale: 1.5 })
+```
+
+### Canvas implementation differences
+
+#### Browser
+
+Uses native `HTMLCanvasElement` with GPU acceleration and full `FontFace` API support. Embedded PDF fonts render exactly as intended.
+
+#### Node.js (`@napi-rs/canvas`)
+
+Uses software rendering (Skia via NAPI). Notable differences:
+
+- **Embedded fonts**: pdfjs cannot register PDF-embedded fonts via `FontFace` API in Node → falls back to substitution fonts. Pages that differ only in small text (e.g., footer timestamps) may produce 0 pixel differences. **Workaround**: increase render scale to 2.0+.
+- **Canvas-to-canvas copy**: `ctx.drawImage(otherCanvas, 0, 0)` does not reliably transfer all pixel data (especially text). The library now reads `getImageData()` directly from rendered canvases when dimensions match, only using intermediate copy for size mismatches.
+
+### Pixelmatch sensitivity
+
+Default `threshold: 0.1` means a pixel is flagged as different if > 10% of its RGBA channels differ. `includeAA: true` counts anti-aliased edges (blended pixels at shape boundaries). Lower threshold → more sensitive (more false positives), higher → fewer differences reported.
+
+For contract/legal documents with crisp text, `threshold: 0.1` is appropriate. For photos/gradients, raise to 0.2–0.3.
 
 ## Requirements
 

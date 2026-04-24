@@ -119,6 +119,24 @@ Key files:
 
 **pdfjs stdout contamination**: pdfjs writes diagnostic warnings via `console.log`. `pdfjsNodeSetup.ts` intercepts calls starting with `"Warning:"` and redirects them to `process.stderr` to keep stdout clean for JSON piping.
 
+## Known gotchas
+
+### `@napi-rs/canvas` — `drawImage` canvas-to-canvas copy
+
+In Node (`@napi-rs/canvas`), calling `ctx.drawImage(otherCanvas, 0, 0)` to copy pixel data between canvases does **not** reliably transfer all pixel data — text rendered with embedded PDF fonts may be lost, making both canvases appear identical and producing 0 pixel differences.
+
+**Fix**: when both rendered pages have the same dimensions, call `getImageData()` directly on the rendered canvas without an intermediate copy. See `packages/core/src/visualDiff.ts` — the same-dimensions fast path.
+
+### pdfjs embedded font rendering in Node vs browser
+
+In the browser, pdfjs registers embedded PDF fonts via the `FontFace` CSS API → text renders with the exact PDF font. In Node, this API is absent → pdfjs falls back to standard/substitute fonts. Pages that differ only in small text (e.g., footer timestamps) may render identically in Node, causing the CLI to report 0 visual differences where the browser finds ~118 px.
+
+Mitigation in place: reading pixel data directly from rendered canvases avoids the copy artefact. If font substitution still masks differences, consider increasing `scale` (currently `1.5`) or configuring `cMapUrl` / `cMapPacked` in `pdfEngine.ts`.
+
+### Release order matters
+
+Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on core; publishing in reverse order causes npm to resolve the old core version.
+
 ## CI/CD
 
 | Workflow | Trigger | What it does |

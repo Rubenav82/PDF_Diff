@@ -44,6 +44,12 @@ pdf-diff compare baseline.pdf actual.pdf \
 pdf-diff compare a.pdf b.pdf --mode text-only --max-text-changes 0
 ```
 
+**Threshold guidance:**
+- **Legal/contract documents** (crisp text, no images): `--max-visual-diff 0.001` (0.1%) — very strict
+- **Invoices** (tables, small numbers): `--max-visual-diff 0.005` (0.5%) — typical
+- **Design proofs** (gradients, colors): `--max-visual-diff 0.02` (2%) — lenient
+- **No visual diff expected**: `--max-visual-diff 0` — fail if ANY pixels differ
+
 ### Page mapping
 
 ```bash
@@ -127,6 +133,22 @@ pdf-diff compare a.pdf b.pdf --ignore-case --ignore-whitespace
     name: pdf-diff-report
     path: diff-report.json
 ```
+
+## Troubleshooting
+
+### "Visual diff shows 0 differences but the web app shows differences"
+
+**Root cause:** `@napi-rs/canvas` (Node.js software rendering) cannot render embedded PDF fonts the same way browsers do. Pages that differ only in small text may appear identical in Node despite being rendered at 2.0× scale.
+
+**Solutions:**
+1. Use the **web app** (browser-based) for final human review of documents with small text changes
+2. Focus on **text diff** (`--mode text-only`) which is platform-agnostic and always detects text changes
+3. Check that both PDFs actually differ — run text diff first to confirm
+
+### PDF fails to render
+
+- Ensure the PDF is not corrupted: `pdfjs` with `verbosity: 0` (default) will silently fail on malformed streams
+- Try the same PDF in the web app; if it fails there too, the PDF itself is the issue
 
 ## Requirements
 
