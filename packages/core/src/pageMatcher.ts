@@ -19,6 +19,13 @@ const MATCH_NORMALIZATION = {
   ignoreLineBreaks: true,
 };
 
+/**
+ * Builds word-based shingles (n-grams) from text for similarity matching.
+ * When text has fewer words than shingle size, each word becomes a shingle.
+ * @param text The text to build shingles from.
+ * @param size The number of consecutive words per shingle.
+ * @returns A set of shingles (word n-grams).
+ */
 export function buildShingles(text: string, size: number): Set<string> {
   const words = text.split(/\s+/).filter((w) => w.length > 0);
   const shingles = new Set<string>();
@@ -43,6 +50,15 @@ export function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : intersection / union;
 }
 
+/**
+ * Suggests an automatic page mapping between original and modified PDFs using dynamic programming.
+ * Uses shingle-based Jaccard similarity to find optimal page pairs, then backtracks to construct the mapping.
+ * Pages with similarity below the threshold are treated as deleted (original) or inserted (modified).
+ * @param originalTexts Extracted text from each page of the original PDF.
+ * @param modifiedTexts Extracted text from each page of the modified PDF.
+ * @param options Matching options: threshold (min similarity to match, default 0.2), shingleSize (n-gram size, default 3), gapPenalty (penalty for deletions/insertions, default 0).
+ * @returns PageMapping array where each entry maps an original page number to a modified page number (0 means no match).
+ */
 export function suggestPageMapping(
   originalTexts: string[],
   modifiedTexts: string[],

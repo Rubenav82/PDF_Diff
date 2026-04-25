@@ -13,6 +13,15 @@ export interface PixelDiffResult {
   diffImageData: Uint8ClampedArray;
 }
 
+/**
+ * Compares two images pixel-by-pixel and returns the difference count and diff visualization.
+ * @param img1 RGBA pixel data of the first image (Uint8ClampedArray where each 4 consecutive bytes = R,G,B,A).
+ * @param img2 RGBA pixel data of the second image (same format).
+ * @param width Image width in pixels.
+ * @param height Image height in pixels.
+ * @param options Matching options: threshold (pixel tolerance 0-1, default 0.1), includeAA (penalize anti-aliased edges, default true).
+ * @returns Object with diffPixels (count of differing pixels) and diffImageData (visualization as RGBA).
+ */
 export function compareImageData(
   img1: Uint8ClampedArray,
   img2: Uint8ClampedArray,
@@ -47,6 +56,17 @@ function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, ma
   return thumb.toDataURL?.('image/png') ?? '';
 }
 
+/**
+ * Renders mapped page pairs from two PDFs and performs pixel-level comparison.
+ * Handles dimension mismatches by padding to the larger size. Generates diff visualization and thumbnail.
+ * @param originalBuffer PDF file as Uint8Array.
+ * @param modifiedBuffer PDF file as Uint8Array.
+ * @param pageMapping Page pairs to compare (filters to entries where both originalPage > 0 and modifiedPage > 0).
+ * @param provider Canvas factory (e.g., browser canvas or Node canvas).
+ * @param pixelDiffOptions Pixel diff options (threshold, includeAA).
+ * @returns Array of VisualDiffReportEntry with diffPixels, totalPixels, diffRatio, and thumbnail.
+ * @throws If canvas 2D context cannot be obtained or PDF rendering fails.
+ */
 export async function buildVisualDiffEntries(
   originalBuffer: Uint8Array,
   modifiedBuffer: Uint8Array,
