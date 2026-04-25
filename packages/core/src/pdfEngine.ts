@@ -35,6 +35,12 @@ export async function getPdfPageCountFromBuffer(buffer: Uint8Array): Promise<num
   return pdf.numPages;
 }
 
+/**
+ * Extracts text content from all pages of a PDF.
+ * @param buffer PDF file as Uint8Array.
+ * @returns Array of text strings, where index 0 = page 1, index 1 = page 2, etc.
+ * @throws If PDF cannot be loaded or text extraction fails.
+ */
 export async function extractTextFromBuffer(buffer: Uint8Array): Promise<string[]> {
   const loadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
   const pdf = await loadingTask.promise;
@@ -50,6 +56,17 @@ export async function extractTextFromBuffer(buffer: Uint8Array): Promise<string[
   return pageTexts;
 }
 
+/**
+ * Renders a single PDF page to a canvas asynchronously. Supports cancellation.
+ * If pageNum is out of range, returns an empty canvas with width=0, height=0 (no error).
+ * Uses isSettled flag to prevent race conditions between cancellation and completion.
+ * @param buffer PDF file as Uint8Array.
+ * @param pageNum 1-indexed page number to render.
+ * @param provider Canvas factory.
+ * @param scale Rendering scale (default 2.0 for high-resolution output).
+ * @returns PdfRenderTask with promise resolving to PdfRenderResult and a cancel method.
+ * @throws If canvas 2D context cannot be obtained.
+ */
 export function renderPageToProvider(
   buffer: Uint8Array,
   pageNum: number,

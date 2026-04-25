@@ -88,6 +88,15 @@ function countDiffChars(diff: TextDiffResult['diff']): { added: number; removed:
   return { added, removed, unchanged };
 }
 
+/**
+ * Orchestrates the full PDF comparison: hashing, page counting, text extraction, page mapping, text diff, visual diff, and threshold evaluation.
+ * Determines exit code based on whether diffs exist and whether they pass explicit thresholds.
+ * @param originalPath Path to the original PDF file.
+ * @param modifiedPath Path to the modified PDF file.
+ * @param opts Comparison options (mode, autoMap, output format, normalization flags, thresholds).
+ * @returns CompareResult with all computed diffs and summary, plus exitCode (0 = pass, 1 = fail).
+ * @throws If files cannot be read or PDF processing fails.
+ */
 export async function runCompare(
   originalPath: string,
   modifiedPath: string,
@@ -269,6 +278,14 @@ export async function runCompare(
   return { result, exitCode };
 }
 
+/**
+ * CLI entry point for PDF comparison. Wraps runCompare and formats output (JSON/HTML/text).
+ * Writes output to file (if opts.out is set) or to stdout. Always calls process.exit with the result code.
+ * @param originalPath Path to the original PDF file.
+ * @param modifiedPath Path to the modified PDF file.
+ * @param opts Comparison options and output format.
+ * @throws Never (catches all errors internally and exits with code 2).
+ */
 export async function compareCommand(
   originalPath: string,
   modifiedPath: string,

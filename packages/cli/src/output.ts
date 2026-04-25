@@ -2,6 +2,12 @@ import type { CompareResult } from './commands/compare.js';
 import { generateReportHtml } from '@pdf-diff/core';
 import type { ReportData } from '@pdf-diff/core';
 
+/**
+ * Transforms CLI CompareResult into core-compatible ReportData and generates HTML.
+ * Extracts textDiff from _internal, maps page results to visual entries, and fills in defaults.
+ * @param result CompareResult from runCompare (includes _internal.textDiff for detailed diffs).
+ * @returns HTML string generated from the report data.
+ */
 export function formatHtml(result: CompareResult): string {
   const textDiff = result._internal?.textDiff ?? null;
 
