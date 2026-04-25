@@ -21,5 +21,6 @@ For each function/class, include:
 
 Rules:
 - Do not document the obvious (simple getters, trivial constructors).
+- Docs in spanish language.
 - @examples must be executable (valid code).
 - Maintain the existing documentation style in the project.
