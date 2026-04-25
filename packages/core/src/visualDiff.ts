@@ -14,13 +14,13 @@ export interface PixelDiffResult {
 }
 
 /**
- * Compares two images pixel-by-pixel and returns the difference count and diff visualization.
- * @param img1 RGBA pixel data of the first image (Uint8ClampedArray where each 4 consecutive bytes = R,G,B,A).
- * @param img2 RGBA pixel data of the second image (same format).
- * @param width Image width in pixels.
- * @param height Image height in pixels.
- * @param options Matching options: threshold (pixel tolerance 0-1, default 0.1), includeAA (penalize anti-aliased edges, default true).
- * @returns Object with diffPixels (count of differing pixels) and diffImageData (visualization as RGBA).
+ * Compara dos imágenes píxel a píxel y retorna el conteo de diferencias y visualización.
+ * @param img1 Datos de píxeles RGBA de la primera imagen (Uint8ClampedArray donde cada 4 bytes consecutivos = R,G,B,A).
+ * @param img2 Datos de píxeles RGBA de la segunda imagen (mismo formato).
+ * @param width Ancho de la imagen en píxeles.
+ * @param height Alto de la imagen en píxeles.
+ * @param options Opciones de coincidencia: threshold (tolerancia de píxel 0-1, default 0.1), includeAA (penalizar bordes anti-aliased, default true).
+ * @returns Objeto con diffPixels (conteo de píxeles diferentes) y diffImageData (visualización como RGBA).
  */
 export function compareImageData(
   img1: Uint8ClampedArray,
@@ -57,15 +57,15 @@ function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, ma
 }
 
 /**
- * Renders mapped page pairs from two PDFs and performs pixel-level comparison.
- * Handles dimension mismatches by padding to the larger size. Generates diff visualization and thumbnail.
- * @param originalBuffer PDF file as Uint8Array.
- * @param modifiedBuffer PDF file as Uint8Array.
- * @param pageMapping Page pairs to compare (filters to entries where both originalPage > 0 and modifiedPage > 0).
- * @param provider Canvas factory (e.g., browser canvas or Node canvas).
- * @param pixelDiffOptions Pixel diff options (threshold, includeAA).
- * @returns Array of VisualDiffReportEntry with diffPixels, totalPixels, diffRatio, and thumbnail.
- * @throws If canvas 2D context cannot be obtained or PDF rendering fails.
+ * Renderiza pares de páginas mapeadas de dos PDFs y realiza comparación a nivel de píxel.
+ * Maneja desajustes de dimensiones rellenando al tamaño mayor. Genera visualización de diferencias y miniatura.
+ * @param originalBuffer Archivo PDF como Uint8Array.
+ * @param modifiedBuffer Archivo PDF como Uint8Array.
+ * @param pageMapping Pares de páginas a comparar (filtra a entradas donde ambas originalPage > 0 y modifiedPage > 0).
+ * @param provider Factory de canvas (ej., canvas del navegador o canvas de Node).
+ * @param pixelDiffOptions Opciones de diferencia de píxel (threshold, includeAA).
+ * @returns Array de VisualDiffReportEntry con diffPixels, totalPixels, diffRatio, y miniatura.
+ * @throws Si no se puede obtener contexto 2D de canvas o falla el renderizado de PDF.
  */
 export async function buildVisualDiffEntries(
   originalBuffer: Uint8Array,

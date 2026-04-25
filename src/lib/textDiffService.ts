@@ -18,14 +18,14 @@ export interface AsyncComparisonProgress {
 }
 
 /**
- * Async version of buildTextComparison with progress tracking.
- * Useful for browser UI to update progress bar as comparison proceeds through page pairs.
- * @param originalPages Array of extracted text from original PDF pages.
- * @param modifiedPages Array of extracted text from modified PDF pages.
- * @param pageMapping Page mapping defining which pages to compare.
- * @param options Normalization and inclusion flags.
- * @param onProgress Optional callback fired after each page pair is processed, with current and total counts.
- * @returns TextComparisonResult with diffResults and summary (same format as synchronous buildTextComparison).
+ * Versión asincrónica de buildTextComparison con seguimiento de progreso.
+ * Útil para UI del navegador para actualizar barra de progreso mientras la comparación procede a través de pares de páginas.
+ * @param originalPages Array de texto extraído de páginas del PDF original.
+ * @param modifiedPages Array de texto extraído de páginas del PDF modificado.
+ * @param pageMapping Mapeo de páginas que define qué páginas comparar.
+ * @param options Marcas de normalización e inclusión.
+ * @param onProgress Callback opcional disparado después de que cada par de páginas sea procesado, con conteos actual y total.
+ * @returns TextComparisonResult con diffResults y resumen (mismo formato que buildTextComparison sincrónico).
  */
 export async function buildTextComparisonAsync(
   originalPages: string[],

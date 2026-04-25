@@ -89,13 +89,13 @@ function countDiffChars(diff: TextDiffResult['diff']): { added: number; removed:
 }
 
 /**
- * Orchestrates the full PDF comparison: hashing, page counting, text extraction, page mapping, text diff, visual diff, and threshold evaluation.
- * Determines exit code based on whether diffs exist and whether they pass explicit thresholds.
- * @param originalPath Path to the original PDF file.
- * @param modifiedPath Path to the modified PDF file.
- * @param opts Comparison options (mode, autoMap, output format, normalization flags, thresholds).
- * @returns CompareResult with all computed diffs and summary, plus exitCode (0 = pass, 1 = fail).
- * @throws If files cannot be read or PDF processing fails.
+ * Orquesta la comparación completa de PDF: hash, conteo de páginas, extracción de texto, mapeo de páginas, diff de texto, diff visual y evaluación de umbrales.
+ * Determina código de salida basado en si existen diffs y si pasan umbrales explícitos.
+ * @param originalPath Ruta al archivo PDF original.
+ * @param modifiedPath Ruta al archivo PDF modificado.
+ * @param opts Opciones de comparación (modo, autoMap, formato de salida, marcas de normalización, umbrales).
+ * @returns CompareResult con todos los diffs calculados y resumen, más exitCode (0 = éxito, 1 = fallo).
+ * @throws Si los archivos no pueden leerse o falla el procesamiento de PDF.
  */
 export async function runCompare(
   originalPath: string,
@@ -279,12 +279,12 @@ export async function runCompare(
 }
 
 /**
- * CLI entry point for PDF comparison. Wraps runCompare and formats output (JSON/HTML/text).
- * Writes output to file (if opts.out is set) or to stdout. Always calls process.exit with the result code.
- * @param originalPath Path to the original PDF file.
- * @param modifiedPath Path to the modified PDF file.
- * @param opts Comparison options and output format.
- * @throws Never (catches all errors internally and exits with code 2).
+ * Punto de entrada CLI para comparación de PDF. Envuelve runCompare y formatea salida (JSON/HTML/texto).
+ * Escribe salida a archivo (si opts.out está configurado) o a stdout. Siempre llama process.exit con el código de resultado.
+ * @param originalPath Ruta al archivo PDF original.
+ * @param modifiedPath Ruta al archivo PDF modificado.
+ * @param opts Opciones de comparación y formato de salida.
+ * @throws Nunca (captura todos los errores internamente y sale con código 2).
  */
 export async function compareCommand(
   originalPath: string,

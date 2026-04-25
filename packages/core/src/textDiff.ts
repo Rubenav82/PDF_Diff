@@ -30,14 +30,14 @@ export function normalizeText(text: string, options: TextComparisonOptions['norm
 }
 
 /**
- * Performs character-level text comparison between mapped pages.
- * Classifies each page pair as changed, deleted, or added. Collects summary statistics.
- * Only includes unmapped pages if options.includeUnmappedPages is true.
- * @param originalPages Array of extracted text from original PDF pages (index = page number - 1).
- * @param modifiedPages Array of extracted text from modified PDF pages (index = page number - 1).
- * @param pageMapping Page mapping defining which original and modified pages to compare.
- * @param options Normalization and inclusion flags (ignoreCase, ignoreWhitespace, ignoreLineBreaks, includeUnmappedPages).
- * @returns Object containing diffResults (per-page diffs with 'changed'/'deleted'/'added' kind) and summary statistics.
+ * Realiza comparación de texto a nivel de carácter entre páginas mapeadas.
+ * Clasifica cada par de páginas como cambio, eliminado o agregado. Recopila estadísticas de resumen.
+ * Solo incluye páginas sin mapear si options.includeUnmappedPages es verdadero.
+ * @param originalPages Array de texto extraído de páginas del PDF original (índice = número de página - 1).
+ * @param modifiedPages Array de texto extraído de páginas del PDF modificado (índice = número de página - 1).
+ * @param pageMapping Mapeo de páginas que define qué páginas original y modificada comparar.
+ * @param options Marcas de normalización e inclusión (ignoreCase, ignoreWhitespace, ignoreLineBreaks, includeUnmappedPages).
+ * @returns Objeto que contiene diffResults (diffs por página con tipo 'changed'/'deleted'/'added') y estadísticas de resumen.
  */
 export function buildTextComparison(
   originalPages: string[],

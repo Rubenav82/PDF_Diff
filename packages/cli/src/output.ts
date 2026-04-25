@@ -3,10 +3,10 @@ import { generateReportHtml } from '@pdf-diff/core';
 import type { ReportData } from '@pdf-diff/core';
 
 /**
- * Transforms CLI CompareResult into core-compatible ReportData and generates HTML.
- * Extracts textDiff from _internal, maps page results to visual entries, and fills in defaults.
- * @param result CompareResult from runCompare (includes _internal.textDiff for detailed diffs).
- * @returns HTML string generated from the report data.
+ * Transforma CompareResult de CLI en ReportData compatible con core y genera HTML.
+ * Extrae textDiff de _internal, mapea resultados de página a entradas visuales, y completa defaults.
+ * @param result CompareResult de runCompare (incluye _internal.textDiff para diffs detallados).
+ * @returns String HTML generado a partir de los datos del reporte.
  */
 export function formatHtml(result: CompareResult): string {
   const textDiff = result._internal?.textDiff ?? null;

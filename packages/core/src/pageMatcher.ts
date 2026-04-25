@@ -20,11 +20,11 @@ const MATCH_NORMALIZATION = {
 };
 
 /**
- * Builds word-based shingles (n-grams) from text for similarity matching.
- * When text has fewer words than shingle size, each word becomes a shingle.
- * @param text The text to build shingles from.
- * @param size The number of consecutive words per shingle.
- * @returns A set of shingles (word n-grams).
+ * Construye n-gramas (shingles) de palabras a partir de texto para comparar similitud.
+ * Si el texto tiene menos palabras que el tamaño de shingle, cada palabra se convierte en un shingle.
+ * @param text Texto del cual construir los shingles.
+ * @param size Número de palabras consecutivas por shingle.
+ * @returns Conjunto de shingles (n-gramas de palabras).
  */
 export function buildShingles(text: string, size: number): Set<string> {
   const words = text.split(/\s+/).filter((w) => w.length > 0);
@@ -51,13 +51,13 @@ export function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
 }
 
 /**
- * Suggests an automatic page mapping between original and modified PDFs using dynamic programming.
- * Uses shingle-based Jaccard similarity to find optimal page pairs, then backtracks to construct the mapping.
- * Pages with similarity below the threshold are treated as deleted (original) or inserted (modified).
- * @param originalTexts Extracted text from each page of the original PDF.
- * @param modifiedTexts Extracted text from each page of the modified PDF.
- * @param options Matching options: threshold (min similarity to match, default 0.2), shingleSize (n-gram size, default 3), gapPenalty (penalty for deletions/insertions, default 0).
- * @returns PageMapping array where each entry maps an original page number to a modified page number (0 means no match).
+ * Sugiere un mapeo automático de páginas entre PDFs original y modificado usando programación dinámica.
+ * Usa similitud de Jaccard basada en shingles para encontrar pares óptimos, luego retrocede para construir el mapeo.
+ * Las páginas con similitud por debajo del umbral se tratan como eliminadas (original) o insertadas (modificado).
+ * @param originalTexts Texto extraído de cada página del PDF original.
+ * @param modifiedTexts Texto extraído de cada página del PDF modificado.
+ * @param options Opciones de coincidencia: threshold (similitud mínima para coincidir, default 0.2), shingleSize (tamaño de n-grama, default 3), gapPenalty (penalización por eliminaciones/inserciones, default 0).
+ * @returns Array PageMapping donde cada entrada mapea un número de página original a un número de página modificado (0 significa sin coincidencia).
  */
 export function suggestPageMapping(
   originalTexts: string[],
