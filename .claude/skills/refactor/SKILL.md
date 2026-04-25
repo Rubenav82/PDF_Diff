@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Analyze and refactor code, identifying code smells and improvements
+description: Analyze and refactor code, identifying code smells and improvements. Use this skill when the user asks you to refactor the code or the project.
 ---
 
 Analyze the specified file or module and propose specific refactorings.

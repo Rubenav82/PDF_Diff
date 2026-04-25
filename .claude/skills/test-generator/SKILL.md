@@ -1,6 +1,6 @@
 ---
 name: test-generator
-description: Generates unit tests for a specific file or module
+description: Generates unit tests for a specific file or module. Use this skill after creating or modifying code.
 ---
 
 Generates complete tests for the modified file or module.

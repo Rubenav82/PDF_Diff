@@ -1,6 +1,7 @@
 ---
 name: docs
-description: Generates JSDoc/TSDoc documentation for a file or module
+description: Generates JSDoc/TSDoc documentation for a file or module after modification. Use this skill when the user asks you to document the code or the project.
+model: haiku
 ---
 
 Generates complete documentation for the specified file.
