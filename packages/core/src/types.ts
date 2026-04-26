@@ -46,7 +46,9 @@ export interface VisualDiffReportEntry {
 }
 
 export interface PageMapEntry {
+  /** 1-based page number in the original document; 0 means this entry represents an added page with no original counterpart. */
   originalPage: number;
+  /** 1-based page number in the modified document; 0 means this entry represents a deleted page with no modified counterpart. */
   modifiedPage: number;
 }
 

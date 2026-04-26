@@ -86,8 +86,10 @@ const formatDiffHtml = (
 
     const beforeHtml = before ? `<span class="diff-same">${escapeHtml(before)}</span>` : '';
     const afterHtml = after ? `<span class="diff-same">${escapeHtml(after)}</span>` : '';
+    const beforeSep = beforeHtml ? '<span class="diff-sep"> </span>' : '';
+    const afterSep = afterHtml ? '<span class="diff-sep"> </span>' : '';
 
-    blocks.push(`<div class="diff-block">${beforeHtml}${beforeHtml ? '<span class="diff-sep"> </span>' : ''}${highlighted}${afterHtml ? '<span class="diff-sep"> </span>' : ''}${afterHtml}</div>`);
+    blocks.push(`<div class="diff-block">${beforeHtml}${beforeSep}${highlighted}${afterSep}${afterHtml}</div>`);
   }
 
   if (blocks.length === 0) {

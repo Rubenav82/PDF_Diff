@@ -69,6 +69,11 @@ export function suggestPageMapping(
   const n = originalTexts.length;
   const m = modifiedTexts.length;
 
+  const MAX_PAGES = 500;
+  if (n > MAX_PAGES || m > MAX_PAGES) {
+    throw new Error(`suggestPageMapping: too many pages (${n}x${m}). Maximum supported is ${MAX_PAGES} pages per document.`);
+  }
+
   if (n === 0) return [];
 
   if (m === 0) {

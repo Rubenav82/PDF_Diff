@@ -1,7 +1,7 @@
 import pixelmatch from 'pixelmatch';
 import type { CanvasProvider, CanvasLike } from './canvasProvider.js';
 import type { PageMapping, VisualDiffReportEntry } from './types.js';
-import { renderPageToProvider } from './pdfEngine.js';
+import { renderPageToProviderWithPdfLocked, loadPdfBuffer } from './pdfEngine.js';
 
 export interface PixelDiffOptions {
   threshold?: number;
@@ -43,6 +43,14 @@ function getImageData(canvas: CanvasLike, width: number, height: number): Uint8C
   return ctx.getImageData(0, 0, width, height).data;
 }
 
+function copyCanvasPixels(srcCanvas: CanvasLike, srcWidth: number, srcHeight: number, destCtx: CanvasRenderingContext2D, destX: number, destY: number): void {
+  if (srcWidth <= 0 || srcHeight <= 0) return;
+  const srcCtx = srcCanvas.getContext('2d') as CanvasRenderingContext2D | null;
+  if (!srcCtx) return;
+  const imageData = srcCtx.getImageData(0, 0, srcWidth, srcHeight);
+  destCtx.putImageData(imageData, destX, destY);
+}
+
 function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, maxWidth: number): string {
   if (!canvas.toDataURL) return '';
   const ratio = canvas.width > 0 ? Math.min(1, maxWidth / canvas.width) : 1;
@@ -52,7 +60,7 @@ function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, ma
   );
   const ctx = thumb.getContext('2d') as CanvasRenderingContext2D | null;
   if (!ctx) return '';
-  ctx.drawImage(canvas as unknown as HTMLImageElement, 0, 0, thumb.width, thumb.height);
+  copyCanvasPixels(canvas, canvas.width, canvas.height, ctx, 0, 0);
   return thumb.toDataURL?.('image/png') ?? '';
 }
 
@@ -78,74 +86,83 @@ export async function buildVisualDiffEntries(
     (entry) => entry.originalPage > 0 && entry.modifiedPage > 0
   );
 
-  const results: VisualDiffReportEntry[] = [];
+  const originalPdf = await loadPdfBuffer(originalBuffer);
+  const modifiedPdf = await loadPdfBuffer(modifiedBuffer);
 
-  for (const entry of validMappings) {
-    const [origResult, modResult] = await Promise.all([
-      renderPageToProvider(originalBuffer, entry.originalPage, provider).promise,
-      renderPageToProvider(modifiedBuffer, entry.modifiedPage, provider).promise,
-    ]);
+  try {
+    const results: VisualDiffReportEntry[] = [];
 
-    const origW = origResult.canvas.width;
-    const origH = origResult.canvas.height;
-    const modW = modResult.canvas.width;
-    const modH = modResult.canvas.height;
-    const width = Math.max(origW, modW);
-    const height = Math.max(origH, modH);
+    for (const entry of validMappings) {
+      const [origResult, modResult] = await Promise.all([
+        renderPageToProviderWithPdfLocked(originalPdf, entry.originalPage, provider),
+        renderPageToProviderWithPdfLocked(modifiedPdf, entry.modifiedPage, provider),
+      ]);
 
-    if (width <= 1 || height <= 1) {
+      const origW = origResult.canvas.width;
+      const origH = origResult.canvas.height;
+      const modW = modResult.canvas.width;
+      const modH = modResult.canvas.height;
+      const width = Math.max(origW, modW);
+      const height = Math.max(origH, modH);
+
+      if (width <= 1 || height <= 1) {
+        results.push({
+          originalPage: entry.originalPage,
+          modifiedPage: entry.modifiedPage,
+          diffPixels: 0,
+          totalPixels: 0,
+          diffRatio: 0,
+          thumbnailDataUrl: '',
+        });
+        continue;
+      }
+
+      let img1: Uint8ClampedArray;
+      let img2: Uint8ClampedArray;
+
+      if (origW === width && origH === height && modW === width && modH === height) {
+        // Same dimensions — read pixel data directly from the rendered canvases to avoid
+        // any canvas-to-canvas drawImage copy artefacts in non-browser environments.
+        img1 = getImageData(origResult.canvas, width, height);
+        img2 = getImageData(modResult.canvas, width, height);
+      } else {
+        // Different page sizes — pad both to the larger dimension before comparing.
+        // Use getImageData/putImageData to avoid canvas-to-canvas drawImage artefacts in Node.
+        const normalizedOrig = provider.createCanvas(width, height);
+        const normalizedMod = provider.createCanvas(width, height);
+        const normOrigCtx = normalizedOrig.getContext('2d') as CanvasRenderingContext2D | null;
+        const normModCtx = normalizedMod.getContext('2d') as CanvasRenderingContext2D | null;
+        if (!normOrigCtx || !normModCtx) throw new Error('Could not create normalization contexts.');
+        copyCanvasPixels(origResult.canvas, origW, origH, normOrigCtx, 0, 0);
+        copyCanvasPixels(modResult.canvas, modW, modH, normModCtx, 0, 0);
+        img1 = getImageData(normalizedOrig, width, height);
+        img2 = getImageData(normalizedMod, width, height);
+      }
+
+      const diffCanvas = provider.createCanvas(width, height);
+      const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
+
+      const diffCtx = diffCanvas.getContext('2d') as CanvasRenderingContext2D | null;
+      if (diffCtx) {
+        const imageData = diffCtx.createImageData(width, height);
+        imageData.data.set(diffImageData);
+        diffCtx.putImageData(imageData, 0, 0);
+      }
+
+      const totalPixels = width * height;
       results.push({
         originalPage: entry.originalPage,
         modifiedPage: entry.modifiedPage,
-        diffPixels: 0,
-        totalPixels: 0,
-        diffRatio: 0,
-        thumbnailDataUrl: '',
+        diffPixels,
+        totalPixels,
+        diffRatio: totalPixels > 0 ? diffPixels / totalPixels : 0,
+        thumbnailDataUrl: createThumbnailDataUrl(diffCanvas, provider, 360),
       });
-      continue;
     }
 
-    let img1: Uint8ClampedArray;
-    let img2: Uint8ClampedArray;
-
-    if (origW === width && origH === height && modW === width && modH === height) {
-      // Same dimensions — read pixel data directly from the rendered canvases to avoid
-      // any canvas-to-canvas drawImage copy artefacts in non-browser environments.
-      img1 = getImageData(origResult.canvas, width, height);
-      img2 = getImageData(modResult.canvas, width, height);
-    } else {
-      // Different page sizes — pad both to the larger dimension before comparing.
-      const normalizedOrig = provider.createCanvas(width, height);
-      const normalizedMod = provider.createCanvas(width, height);
-      const normOrigCtx = normalizedOrig.getContext('2d') as CanvasRenderingContext2D | null;
-      const normModCtx = normalizedMod.getContext('2d') as CanvasRenderingContext2D | null;
-      if (!normOrigCtx || !normModCtx) throw new Error('Could not create normalization contexts.');
-      normOrigCtx.drawImage(origResult.canvas as unknown as HTMLImageElement, 0, 0);
-      normModCtx.drawImage(modResult.canvas as unknown as HTMLImageElement, 0, 0);
-      img1 = getImageData(normalizedOrig, width, height);
-      img2 = getImageData(normalizedMod, width, height);
-    }
-
-    const diffCanvas = provider.createCanvas(width, height);
-    const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
-
-    const diffCtx = diffCanvas.getContext('2d') as CanvasRenderingContext2D | null;
-    if (diffCtx) {
-      const imageData = diffCtx.createImageData(width, height);
-      imageData.data.set(diffImageData);
-      diffCtx.putImageData(imageData, 0, 0);
-    }
-
-    const totalPixels = width * height;
-    results.push({
-      originalPage: entry.originalPage,
-      modifiedPage: entry.modifiedPage,
-      diffPixels,
-      totalPixels,
-      diffRatio: totalPixels > 0 ? diffPixels / totalPixels : 0,
-      thumbnailDataUrl: createThumbnailDataUrl(diffCanvas, provider, 360),
-    });
+    return results;
+  } finally {
+    void originalPdf.destroy();
+    void modifiedPdf.destroy();
   }
-
-  return results;
 }
