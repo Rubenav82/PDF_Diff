@@ -139,14 +139,26 @@ export async function buildVisualDiffEntries(
         img2 = getImageData(normalizedMod, width, height);
       }
 
-      const diffCanvas = provider.createCanvas(width, height);
       const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
 
-      const diffCtx = diffCanvas.getContext('2d') as CanvasRenderingContext2D | null;
-      if (diffCtx) {
-        const imageData = diffCtx.createImageData(width, height);
-        imageData.data.set(diffImageData);
-        diffCtx.putImageData(imageData, 0, 0);
+      // Build composite thumbnail: original page pixels with diff pixels highlighted in red.
+      // The raw pixelmatch output shows equal pixels at ~10% opacity (nearly invisible differences),
+      // so we overlay red markers onto the original page image instead.
+      const compositeData = new Uint8ClampedArray(img1);
+      for (let i = 0; i < diffImageData.length; i += 4) {
+        if (diffImageData[i] === 255 && diffImageData[i + 1] === 0 && diffImageData[i + 2] === 0) {
+          compositeData[i] = 255;
+          compositeData[i + 1] = 0;
+          compositeData[i + 2] = 0;
+          compositeData[i + 3] = 255;
+        }
+      }
+      const compositeCanvas = provider.createCanvas(width, height);
+      const compCtx = compositeCanvas.getContext('2d') as CanvasRenderingContext2D | null;
+      if (compCtx) {
+        const imgData = compCtx.createImageData(width, height);
+        imgData.data.set(compositeData);
+        compCtx.putImageData(imgData, 0, 0);
       }
 
       const totalPixels = width * height;
@@ -156,7 +168,7 @@ export async function buildVisualDiffEntries(
         diffPixels,
         totalPixels,
         diffRatio: totalPixels > 0 ? diffPixels / totalPixels : 0,
-        thumbnailDataUrl: createThumbnailDataUrl(diffCanvas, provider, 360),
+        thumbnailDataUrl: createThumbnailDataUrl(compositeCanvas, provider, 360),
       });
     }
 
