@@ -163,9 +163,11 @@ export async function buildVisualDiffEntries(
       const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
 
       // Build composite thumbnail: img1 blended over white + diff pixels in solid red.
-      // Blending over white (instead of copying img1 directly) ensures all pixels are fully
-      // opaque so the thumbnail doesn't appear faded when pdfjs renders on a transparent
-      // background in Node.js.
+      // pdfjs in Node.js may composite page layers via canvas drawImage internally; this can
+      // produce near-white pixel values for dark content (effective opacity ~5-10%). After
+      // blending over white we apply auto-contrast stretch when the darkest pixel is still very
+      // close to white (minVal > 180), making faded content visible in the thumbnail without
+      // affecting pages that render correctly.
       const compositeData = new Uint8ClampedArray(width * height * 4);
       for (let i = 0; i < img1.length; i += 4) {
         const a = img1[i + 3] / 255;
@@ -173,6 +175,22 @@ export async function buildVisualDiffEntries(
         compositeData[i + 1] = Math.round(img1[i + 1] * a + 255 * (1 - a));
         compositeData[i + 2] = Math.round(img1[i + 2] * a + 255 * (1 - a));
         compositeData[i + 3] = 255;
+      }
+      // Auto-contrast: if all content is near-white (faded rendering), stretch to full range.
+      let minVal = 255;
+      for (let i = 0; i < compositeData.length; i += 4) {
+        const v = Math.min(compositeData[i], compositeData[i + 1], compositeData[i + 2]);
+        if (v < minVal) minVal = v;
+      }
+      if (minVal > 180) {
+        const range = 255 - minVal;
+        if (range > 0) {
+          for (let i = 0; i < compositeData.length; i += 4) {
+            compositeData[i] = Math.round((compositeData[i] - minVal) * 255 / range);
+            compositeData[i + 1] = Math.round((compositeData[i + 1] - minVal) * 255 / range);
+            compositeData[i + 2] = Math.round((compositeData[i + 2] - minVal) * 255 / range);
+          }
+        }
       }
       for (let i = 0; i < diffImageData.length; i += 4) {
         if (diffImageData[i] === 255 && diffImageData[i + 1] === 0 && diffImageData[i + 2] === 0) {
