@@ -135,7 +135,7 @@ Mitigation in place: reading pixel data directly from rendered canvases avoids t
 
 ### Release order matters
 
-Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on core; publishing in reverse order causes npm to resolve the old core version.
+Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on core; publishing in reverse order causes npm to resolve the old core version. The automated release workflow handles this correctly when tags are pushed.
 
 ## CI/CD
 
@@ -144,4 +144,25 @@ Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on c
 | `.github/workflows/cli-tests.yml` | push/PR touching `packages/**` | Matrix (ubuntu + windows), builds core + CLI, runs 21 E2E tests |
 | `.github/workflows/release.yml` | push tag `v*.*.*` | Builds both packages, runs tests, publishes to npm with provenance |
 
-To release: create `NPM_TOKEN` secret in repo settings, then push a tag (`git tag v0.1.0 && git push --tags`).
+### Publishing to npm (via GitHub Actions)
+
+**Setup:** Ensure `NPM_TOKEN` secret exists in repo settings (Settings → Secrets and variables → Actions).
+
+**Release process:**
+
+1. **Update versions** in both `packages/core/package.json` and `packages/cli/package.json` to the same version (e.g., `0.2.0`)
+2. **Update CLI dependency** in `packages/cli/package.json` to match the new core version
+3. **Commit** these version bumps (e.g., `git commit -am "chore: release v0.2.0"`)
+4. **Create tag** and push to GitHub:
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+5. **GitHub Actions** automatically:
+   - Builds both packages (`tsc`)
+   - Runs 21 E2E CLI tests
+   - Publishes `@pdf-diff/core` to npm
+   - Publishes `@pdf-diff/cli` to npm (with core dependency resolved)
+   - Creates release notes
+
+Monitor progress at: https://github.com/Rubenav82/PDF_Diff/actions
