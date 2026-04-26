@@ -1,6 +1,33 @@
 import type { CompareResult } from './commands/compare.js';
 import { generateReportHtml } from '@pdf-diff/core';
-import type { ReportData } from '@pdf-diff/core';
+import type { ReportData, ComparisonSummary } from '@pdf-diff/core';
+
+function computeSummary(result: CompareResult): ComparisonSummary {
+  const mappedPairs = result.mapping.filter(([o, m]) => o !== null && m !== null).length;
+  const deletedPages = result.mapping.filter(([o, m]) => o !== null && m === null).length;
+  const addedPages = result.mapping.filter(([o, m]) => o === null && m !== null).length;
+
+  let changedPairs = 0;
+  for (const page of result.pages) {
+    if (page.original !== null && page.modified !== null) {
+      const hasTextChanges = page.textChanges
+        ? page.textChanges.added + page.textChanges.removed > 0
+        : false;
+      const hasVisualChanges = page.visual ? page.visual.diffPixels > 0 : false;
+      if (hasTextChanges || hasVisualChanges) changedPairs++;
+    }
+  }
+
+  return {
+    mappedPairs,
+    changedPairs,
+    unchangedPairs: mappedPairs - changedPairs,
+    deletedPages,
+    addedPages,
+    totalOriginalPages: result.original.pages,
+    totalModifiedPages: result.modified.pages,
+  };
+}
 
 /**
  * Transforma CompareResult de CLI en ReportData compatible con core y genera HTML.
@@ -25,7 +52,7 @@ export function formatHtml(result: CompareResult): string {
       normalization: { ignoreCase: false, ignoreWhitespace: false, ignoreLineBreaks: false },
       includeUnmappedPages: false,
     },
-    summary: null,
+    summary: computeSummary(result),
     textDiff,
     visualDiffEntries: result.pages
       .filter((p) => p.visual !== undefined)
