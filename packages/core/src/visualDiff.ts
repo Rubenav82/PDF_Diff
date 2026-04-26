@@ -165,9 +165,9 @@ export async function buildVisualDiffEntries(
       // Build composite thumbnail: img1 blended over white + diff pixels in solid red.
       // pdfjs in Node.js may composite page layers via canvas drawImage internally; this can
       // produce near-white pixel values for dark content (effective opacity ~5-10%). After
-      // blending over white we apply auto-contrast stretch when the darkest pixel is still very
-      // close to white (minVal > 180), making faded content visible in the thumbnail without
-      // affecting pages that render correctly.
+      // blending over white we apply an auto-contrast stretch driven by a 0.5% cumulative
+      // percentile, which is robust against anti-aliasing outliers (a few stray dark pixels at
+      // text edges no longer disable the stretch the way an absolute-minimum check did).
       const compositeData = new Uint8ClampedArray(width * height * 4);
       for (let i = 0; i < img1.length; i += 4) {
         const a = img1[i + 3] / 255;
@@ -176,19 +176,27 @@ export async function buildVisualDiffEntries(
         compositeData[i + 2] = Math.round(img1[i + 2] * a + 255 * (1 - a));
         compositeData[i + 3] = 255;
       }
-      // Auto-contrast: if all content is near-white (faded rendering), stretch to full range.
-      let minVal = 255;
+      const histogram = new Uint32Array(256);
+      const totalPx = compositeData.length / 4;
       for (let i = 0; i < compositeData.length; i += 4) {
         const v = Math.min(compositeData[i], compositeData[i + 1], compositeData[i + 2]);
-        if (v < minVal) minVal = v;
+        histogram[v]++;
       }
-      if (minVal > 180) {
-        const range = 255 - minVal;
+      const outlierLimit = Math.floor(totalPx * 0.005);
+      let cumulative = 0;
+      let lo = 255;
+      for (let v = 0; v < 256; v++) {
+        cumulative += histogram[v];
+        if (cumulative > outlierLimit) { lo = v; break; }
+      }
+      if (lo > 50) {
+        const range = 255 - lo;
         if (range > 0) {
           for (let i = 0; i < compositeData.length; i += 4) {
-            compositeData[i] = Math.round((compositeData[i] - minVal) * 255 / range);
-            compositeData[i + 1] = Math.round((compositeData[i + 1] - minVal) * 255 / range);
-            compositeData[i + 2] = Math.round((compositeData[i + 2] - minVal) * 255 / range);
+            for (let c = 0; c < 3; c++) {
+              const pv = compositeData[i + c];
+              compositeData[i + c] = pv <= lo ? 0 : Math.round((pv - lo) * 255 / range);
+            }
           }
         }
       }
