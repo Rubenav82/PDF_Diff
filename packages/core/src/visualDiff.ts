@@ -52,15 +52,36 @@ function copyCanvasPixels(srcCanvas: CanvasLike, srcWidth: number, srcHeight: nu
 }
 
 function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, maxWidth: number): string {
-  if (!canvas.toDataURL) return '';
-  const ratio = canvas.width > 0 ? Math.min(1, maxWidth / canvas.width) : 1;
-  const thumb = provider.createCanvas(
-    Math.max(1, Math.floor(canvas.width * ratio)),
-    Math.max(1, Math.floor(canvas.height * ratio))
-  );
-  const ctx = thumb.getContext('2d') as CanvasRenderingContext2D | null;
-  if (!ctx) return '';
-  ctx.drawImage(canvas as unknown as HTMLImageElement, 0, 0, thumb.width, thumb.height);
+  if (!canvas.toDataURL || canvas.width === 0 || canvas.height === 0) return '';
+  const srcW = canvas.width;
+  const srcH = canvas.height;
+  const ratio = Math.min(1, maxWidth / srcW);
+  const thumbW = Math.max(1, Math.floor(srcW * ratio));
+  const thumbH = Math.max(1, Math.floor(srcH * ratio));
+  // Use getImageData + nearest-neighbour downsample instead of drawImage to avoid
+  // premultiplied-alpha artefacts when scaling semi-transparent canvases in @napi-rs/canvas.
+  const srcCtx = canvas.getContext('2d') as CanvasRenderingContext2D | null;
+  if (!srcCtx) return '';
+  const src = srcCtx.getImageData(0, 0, srcW, srcH).data;
+  const dst = new Uint8ClampedArray(thumbW * thumbH * 4);
+  for (let y = 0; y < thumbH; y++) {
+    const sy = Math.min(srcH - 1, Math.floor(y / ratio));
+    for (let x = 0; x < thumbW; x++) {
+      const sx = Math.min(srcW - 1, Math.floor(x / ratio));
+      const si = (sy * srcW + sx) * 4;
+      const di = (y * thumbW + x) * 4;
+      dst[di] = src[si];
+      dst[di + 1] = src[si + 1];
+      dst[di + 2] = src[si + 2];
+      dst[di + 3] = src[si + 3];
+    }
+  }
+  const thumb = provider.createCanvas(thumbW, thumbH);
+  const thumbCtx = thumb.getContext('2d') as CanvasRenderingContext2D | null;
+  if (!thumbCtx) return '';
+  const imgData = thumbCtx.createImageData(thumbW, thumbH);
+  imgData.data.set(dst);
+  thumbCtx.putImageData(imgData, 0, 0);
   return thumb.toDataURL?.('image/png') ?? '';
 }
 
@@ -141,10 +162,18 @@ export async function buildVisualDiffEntries(
 
       const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
 
-      // Build composite thumbnail: original page pixels with diff pixels highlighted in red.
-      // The raw pixelmatch output shows equal pixels at ~10% opacity (nearly invisible differences),
-      // so we overlay red markers onto the original page image instead.
-      const compositeData = new Uint8ClampedArray(img1);
+      // Build composite thumbnail: img1 blended over white + diff pixels in solid red.
+      // Blending over white (instead of copying img1 directly) ensures all pixels are fully
+      // opaque so the thumbnail doesn't appear faded when pdfjs renders on a transparent
+      // background in Node.js.
+      const compositeData = new Uint8ClampedArray(width * height * 4);
+      for (let i = 0; i < img1.length; i += 4) {
+        const a = img1[i + 3] / 255;
+        compositeData[i] = Math.round(img1[i] * a + 255 * (1 - a));
+        compositeData[i + 1] = Math.round(img1[i + 1] * a + 255 * (1 - a));
+        compositeData[i + 2] = Math.round(img1[i + 2] * a + 255 * (1 - a));
+        compositeData[i + 3] = 255;
+      }
       for (let i = 0; i < diffImageData.length; i += 4) {
         if (diffImageData[i] === 255 && diffImageData[i + 1] === 0 && diffImageData[i + 2] === 0) {
           compositeData[i] = 255;
