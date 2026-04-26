@@ -85,6 +85,12 @@ async function renderPageWithPdf(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get 2D canvas context.');
 
+  // pdfjs in Node does not fill the canvas background; fill white so all rendered
+  // pixels are fully opaque and pixel-diff comparisons are meaningful.
+  const ctx2d = ctx as CanvasRenderingContext2D;
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.fillRect(0, 0, viewport.width, viewport.height);
+
   const renderContext = {
     canvasContext: ctx as CanvasRenderingContext2D,
     viewport,
