@@ -60,7 +60,7 @@ function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, ma
   );
   const ctx = thumb.getContext('2d') as CanvasRenderingContext2D | null;
   if (!ctx) return '';
-  copyCanvasPixels(canvas, canvas.width, canvas.height, ctx, 0, 0);
+  ctx.drawImage(canvas as unknown as HTMLImageElement, 0, 0);
   return thumb.toDataURL?.('image/png') ?? '';
 }
 
