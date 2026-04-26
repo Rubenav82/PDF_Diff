@@ -178,7 +178,7 @@ export function generateReportHtml(data: ReportData): string {
     .diff-more { margin-top: 8px; }
     .diff-more summary { cursor: pointer; color: #4338ca; font-weight: 600; }
     .diff-more[open] summary { margin-bottom: 8px; }
-    .thumb { max-width: 220px; height: auto; border: 1px solid #d1d5db; border-radius: 4px; }
+    .thumb { max-width: 360px; width: 100%; height: auto; border: 1px solid #d1d5db; border-radius: 4px; }
   </style>
 </head>
 <body>
