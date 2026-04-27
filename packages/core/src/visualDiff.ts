@@ -58,8 +58,8 @@ function createThumbnailDataUrl(canvas: CanvasLike, provider: CanvasProvider, ma
   const ratio = Math.min(1, maxWidth / srcW);
   const thumbW = Math.max(1, Math.floor(srcW * ratio));
   const thumbH = Math.max(1, Math.floor(srcH * ratio));
-  // Use getImageData + nearest-neighbour downsample instead of drawImage to avoid
-  // premultiplied-alpha artefacts when scaling semi-transparent canvases in @napi-rs/canvas.
+  // Usa getImageData + submuestreo nearest-neighbour en lugar de drawImage para evitar
+  // artefactos de alpha premultiplicado al escalar canvas semitransparentes en @napi-rs/canvas.
   const srcCtx = canvas.getContext('2d') as CanvasRenderingContext2D | null;
   if (!srcCtx) return '';
   const src = srcCtx.getImageData(0, 0, srcW, srcH).data;
@@ -142,13 +142,13 @@ export async function buildVisualDiffEntries(
       let img2: Uint8ClampedArray;
 
       if (origW === width && origH === height && modW === width && modH === height) {
-        // Same dimensions — read pixel data directly from the rendered canvases to avoid
-        // any canvas-to-canvas drawImage copy artefacts in non-browser environments.
+        // Mismas dimensiones — lee datos de píxeles directamente de los canvas renderizados para evitar
+        // artefactos de copia drawImage canvas-a-canvas en entornos no navegador.
         img1 = getImageData(origResult.canvas, width, height);
         img2 = getImageData(modResult.canvas, width, height);
       } else {
-        // Different page sizes — pad both to the larger dimension before comparing.
-        // Use getImageData/putImageData to avoid canvas-to-canvas drawImage artefacts in Node.
+        // Tamaños de página diferentes — rellena ambos a la dimensión mayor antes de comparar.
+        // Usa getImageData/putImageData para evitar artefactos drawImage canvas-a-canvas en Node.
         const normalizedOrig = provider.createCanvas(width, height);
         const normalizedMod = provider.createCanvas(width, height);
         const normOrigCtx = normalizedOrig.getContext('2d') as CanvasRenderingContext2D | null;
@@ -162,12 +162,12 @@ export async function buildVisualDiffEntries(
 
       const { diffPixels, diffImageData } = compareImageData(img1, img2, width, height, pixelDiffOptions);
 
-      // Build composite thumbnail: img1 blended over white + diff pixels in solid red.
-      // pdfjs in Node.js may composite page layers via canvas drawImage internally; this can
-      // produce near-white pixel values for dark content (effective opacity ~5-10%). After
-      // blending over white we apply an auto-contrast stretch driven by a 0.5% cumulative
-      // percentile, which is robust against anti-aliasing outliers (a few stray dark pixels at
-      // text edges no longer disable the stretch the way an absolute-minimum check did).
+      // Construye miniatura compuesta: img1 superpuesta sobre blanco + píxeles de diferencia en rojo sólido.
+      // pdfjs en Node.js puede componer capas de página vía drawImage internamente; esto puede
+      // producir valores de píxeles casi blancos para contenido oscuro (opacidad efectiva ~5-10%). Después
+      // de superponer sobre blanco, aplicamos un estiramiento de auto-contraste impulsado por un percentil
+      // acumulativo del 0.5%, que es robusto contra outliers anti-aliasing (algunos píxeles oscuros dispersos
+      // en bordes de texto ya no desactivan el estiramiento como hacía un control de mínimo absoluto).
       const compositeData = new Uint8ClampedArray(width * height * 4);
       for (let i = 0; i < img1.length; i += 4) {
         const a = img1[i + 3] / 255;
