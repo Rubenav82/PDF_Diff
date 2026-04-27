@@ -10,48 +10,59 @@ export const TextDiffView: React.FC<TextDiffViewProps> = ({ diffResults }) => {
   const t = useT();
 
   const getTitle = (page: number, modifiedPage: number | undefined, kind: TextDiffResult['kind']) => {
-    if (kind === 'deleted') {
-      return t('textDiff.deleted', { page });
-    }
-    if (kind === 'added') {
-      return t('textDiff.added', { page: modifiedPage ?? '-' });
-    }
-    if (modifiedPage && modifiedPage !== page) {
-      return t('textDiff.comparedWith', { page, modified: modifiedPage });
-    }
+    if (kind === 'deleted') return t('textDiff.deleted', { page });
+    if (kind === 'added') return t('textDiff.added', { page: modifiedPage ?? '-' });
+    if (modifiedPage && modifiedPage !== page) return t('textDiff.comparedWith', { page, modified: modifiedPage });
     return t('textDiff.pageHeader', { page });
   };
 
   if (!diffResults || diffResults.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">{t('textDiff.emptyTitle')}</h3>
-        <p className="mt-1 text-sm text-gray-500">{t('textDiff.emptyBody')}</p>
+      <div style={{ textAlign: 'center', padding: '48px 16px' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
+          {t('textDiff.emptyTitle')}
+        </h3>
+        <p style={{ fontSize: 14, color: 'var(--text-3)' }}>{t('textDiff.emptyBody')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {/* Legend */}
+      <div style={{
+        display: 'flex', gap: 16, padding: '10px 14px',
+        background: 'var(--surface-2)', borderRadius: 7,
+        border: '1px solid var(--border)', flexWrap: 'wrap',
+      }}>
+        {[
+          { cls: 'diff-del', label: t('textDiff.legendDel') },
+          { cls: 'diff-ins', label: t('textDiff.legendIns') },
+        ].map(({ cls, label }) => (
+          <div key={cls} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
+            <span className={cls} style={{ padding: '1px 8px' }}>Aa</span>
+            <span style={{ color: 'var(--text-2)' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pages */}
       {diffResults.map(({ page, modifiedPage, kind, diff }, index) => (
-        <div key={`${kind ?? 'changed'}-${page}-${modifiedPage ?? 0}-${index}`} className="border border-gray-200 rounded-lg">
-          <h3 className="bg-gray-50 px-4 py-2 text-lg font-semibold border-b border-gray-200">
+        <div key={`${kind ?? 'changed'}-${page}-${modifiedPage ?? 0}-${index}`}>
+          <div style={{
+            fontSize: 16, fontWeight: 700, color: 'var(--text)',
+            paddingBottom: 8, borderBottom: '1.5px solid var(--border)', marginBottom: 12,
+          }}>
             {getTitle(page, modifiedPage, kind)}
-          </h3>
-          <pre className="p-4 text-sm whitespace-pre-wrap font-sans break-words leading-relaxed">
-            {diff.map((part, index) => {
-              const style = part.added
-                ? 'bg-green-100 text-green-800'
-                : part.removed
-                ? 'bg-red-100 text-red-800 line-through'
-                : 'text-gray-700';
-              return (
-                <span key={index} className={style}>
-                  {part.value}
-                </span>
-              );
+          </div>
+          <p style={{ fontSize: 13.5, lineHeight: 1.75, color: 'var(--text-2)' }}>
+            {diff.map((part, i) => {
+              const cls = part.added ? 'diff-ins' : part.removed ? 'diff-del' : undefined;
+              return cls
+                ? <span key={i} className={cls}>{part.value}</span>
+                : <span key={i}>{part.value}</span>;
             })}
-          </pre>
+          </p>
         </div>
       ))}
     </div>
