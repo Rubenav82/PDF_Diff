@@ -94,6 +94,8 @@ const es = {
   'textDiff.pageHeader': 'Página {page}',
   'textDiff.emptyTitle': 'No se encontraron diferencias textuales',
   'textDiff.emptyBody': 'El contenido textual de ambos documentos aparentemente es idéntico.',
+  'textDiff.legendDel': 'Texto eliminado',
+  'textDiff.legendIns': 'Texto añadido',
 
   // VisualDiffView
   'visual.noPagesTitle': 'Sin páginas para la comparación visual',
@@ -248,6 +250,8 @@ const en: Record<MessageKey, string> = {
   'textDiff.pageHeader': 'Page {page}',
   'textDiff.emptyTitle': 'No text differences found',
   'textDiff.emptyBody': 'The textual content of both documents appears to be identical.',
+  'textDiff.legendDel': 'Deleted text',
+  'textDiff.legendIns': 'Added text',
 
   'visual.noPagesTitle': 'No pages for visual comparison',
   'visual.noPagesBody':

@@ -15,60 +15,49 @@ interface ComparisonViewProps {
 }
 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({
-  textDiff,
-  visualDiff,
-  originalFile,
-  modifiedFile,
-  viewMode,
-  onViewModeChange,
-  pageMapping,
+  textDiff, visualDiff, originalFile, modifiedFile,
+  viewMode, onViewModeChange, pageMapping,
 }) => {
   const t = useT();
+
+  const tabs: { id: ViewMode; label: string }[] = [
+    { id: 'text',   label: t('tabs.text') },
+    { id: 'visual', label: t('tabs.visual') },
+  ];
+
   const renderContent = () => {
-    if (viewMode === 'text') {
-      return <TextDiffView diffResults={textDiff} />;
-    }
+    if (viewMode === 'text') return <TextDiffView diffResults={textDiff} />;
     if (viewMode === 'visual' && visualDiff && pageMapping) {
-      // Filtrar para comparar solo páginas que han sido mapeadas explícitamente a una página válida.
       const validMapping = pageMapping.filter(m => m.modifiedPage > 0);
-      return (
-        <VisualDiffView
-          originalFile={originalFile}
-          modifiedFile={modifiedFile}
-          pageMapping={validMapping}
-        />
-      );
+      return <VisualDiffView originalFile={originalFile} modifiedFile={modifiedFile} pageMapping={validMapping} />;
     }
     return null;
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+    <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '22px 24px', boxShadow: 'var(--shadow)' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24 }}>
+        {tabs.map(({ id, label }) => (
           <button
-            onClick={() => onViewModeChange('text')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              viewMode === 'text'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            key={id}
+            type="button"
+            onClick={() => onViewModeChange(id)}
+            style={{
+              padding: '11px 20px', fontSize: 14, fontWeight: viewMode === id ? 600 : 400,
+              color: viewMode === id ? 'var(--blue)' : 'var(--text-3)',
+              background: 'none', border: 'none',
+              borderBottom: `2px solid ${viewMode === id ? 'var(--blue)' : 'transparent'}`,
+              marginBottom: -2, transition: 'color 0.15s, border-color 0.15s',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
           >
-            {t('tabs.text')}
+            {label}
           </button>
-          <button
-            onClick={() => onViewModeChange('visual')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              viewMode === 'visual'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {t('tabs.visual')}
-          </button>
-        </nav>
+        ))}
       </div>
-      <div className="p-4 sm:p-6 lg:p-8">{renderContent()}</div>
+
+      {renderContent()}
     </div>
   );
 };
