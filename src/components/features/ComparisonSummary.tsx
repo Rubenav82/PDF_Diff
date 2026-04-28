@@ -62,7 +62,7 @@ export const ComparisonSummaryPanel: React.FC<ComparisonSummaryProps> = ({ summa
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+      <div style={{ textAlign:'center', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
         {stats.map(({ label, value, color }) => (
           <div key={label} style={{
             background: 'var(--surface)', borderRadius: 7, padding: '10px 12px',
