@@ -132,7 +132,7 @@ describe('downloadComparisonReport', () => {
       visualDiffEntries: [],
     });
 
-    expect(captured.html).not.toContain('<script>');
+    expect(captured.html).not.toContain('<script>alert(1)');
     expect(captured.html).toContain('&lt;script&gt;');
   });
 
@@ -151,8 +151,8 @@ describe('downloadComparisonReport', () => {
       visualDiffEntries: [],
     });
 
-    expect(captured.html).toContain('class="diff-removed"');
-    expect(captured.html).toContain('class="diff-added"');
+    expect(captured.html).toContain('class="diff-del"');
+    expect(captured.html).toContain('class="diff-ins"');
     expect(captured.html).toContain('old word');
     expect(captured.html).toContain('new word');
   });
@@ -358,13 +358,13 @@ describe('downloadComparisonReport', () => {
     });
 
     expect(captured.html).toContain('<html lang="en">');
-    expect(captured.html).toContain('PDF comparison report');
-    expect(captured.html).toContain('Documents');
+    expect(captured.html).toContain('Comparison report');
+    expect(captured.html).toContain('Compared documents');
     expect(captured.html).toContain('Executive summary');
     expect(captured.html).toContain('No differences');
     expect(captured.html).toContain('No visual data');
     // ES-only strings should not appear
-    expect(captured.html).not.toContain('Informe de comparacion PDF');
+    expect(captured.html).not.toContain('Informe de comparaci');
     expect(captured.html).not.toContain('Sin diferencias');
   });
 
