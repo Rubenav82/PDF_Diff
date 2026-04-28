@@ -550,7 +550,7 @@ export function generateReportHtml(data: ReportData): string {
         const modTag  = `<span class="page-tag mod">${escapeHtml(pagePrefix)} ${item.mod}</span>`;
         const ph = (pg: number) => `<div class="visual-placeholder">${escapeHtml(pagePrefix)} ${pg}</div>`;
         const diffImg = item.thumb
-          ? `<img src="${item.thumb}" alt="diff p${item.orig}-${item.mod}"/>`
+          ? `<img class="thumb" src="${item.thumb}" alt="diff p${item.orig}-${item.mod}"/>`
           : `<div class="visual-placeholder">${noThumbLabel}</div>`;
         return (
           `<div class="diff-item open">`
