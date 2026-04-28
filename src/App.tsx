@@ -3,6 +3,7 @@ import { FileUploader } from './components/ui/FileUploader';
 import { ComparisonView } from './components/features/ComparisonView';
 import { Spinner } from './components/ui/Spinner';
 import { DocumentIcon, ArrowPathIcon, MoonIcon, SunIcon } from './components/ui/icons';
+import { LogoIzertis, LogoAbanca } from './components/ui/Logo';
 import { getPdfPageCount, extractTextFromPdf, calculateFileHash } from './lib/pdfService';
 import type {
   ComparisonSummary,
@@ -270,7 +271,9 @@ export default function App() {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#6B90D2', letterSpacing: '-0.02em', lineHeight: 1 }}>//A</div>
+          <a href="https://www.abanca.com/es/" target='_blank' rel="noopener noreferrer" className="flex items-center">
+            <LogoAbanca className="h-8 w-auto" />
+          </a>
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <DocumentIcon style={{ width: 16, height: 16, color: 'var(--text-3)' }} />
@@ -309,7 +312,9 @@ export default function App() {
             {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-          <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--accent)', letterSpacing: '-0.01em' }}>izertis</span>
+          <a href="https://www.izertis.com/es/" target='_blank'>
+            <LogoIzertis className="h-10 w-auto" />
+          </a>
         </div>
       </header>
 
