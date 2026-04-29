@@ -67,8 +67,8 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('text');
   const [includeUnmappedPages, setIncludeUnmappedPages] = useState<boolean>(false);
   const [ignoreCase, setIgnoreCase] = useState<boolean>(false);
-  const [ignoreWhitespace, setIgnoreWhitespace] = useState<boolean>(true);
-  const [ignoreLineBreaks, setIgnoreLineBreaks] = useState<boolean>(true);
+  const [ignoreWhitespace, setIgnoreWhitespace] = useState<boolean>(false);
+  const [ignoreLineBreaks, setIgnoreLineBreaks] = useState<boolean>(false);
   const [enableOcr, setEnableOcr] = useState<boolean>(false);
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [hashes, setHashes] = useState<{ original: string | null; modified: string | null }>({ original: null, modified: null });
