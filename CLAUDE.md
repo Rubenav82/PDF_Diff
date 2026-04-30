@@ -61,11 +61,16 @@ The SPA depends on the browser APIs directly; `packages/core` is a pure-TS libra
 | [src/lib/visualReportService.ts](src/lib/visualReportService.ts) | Renders page pairs to canvas, runs pixelmatch, produces thumbnails |
 | [src/lib/reportService.ts](src/lib/reportService.ts) | Generates and downloads a self-contained HTML report |
 | [src/types/types.ts](src/types/types.ts) | All shared TypeScript interfaces (`TextDiffResult`, `ComparisonSummary`, `VisualDiffReportEntry`, `PageMapping`) |
+| [src/version.ts](src/version.ts) | `APP_VERSION` constant — **must be bumped manually** when releasing a new SPA version |
 
 ### Component hierarchy
 
 ```
 App.tsx
+├── [header]
+│   ├── LanguageSelector    ← ES/EN switcher
+│   ├── HelpMenu            ← ? button: version, report issue (mailto), privacy policy modal
+│   └── theme toggle
 ├── FileUploader (×2 — original & modified)
 ├── PageMapper          ← page mapping configuration
 ├── ComparisonSummary   ← stats after comparison
