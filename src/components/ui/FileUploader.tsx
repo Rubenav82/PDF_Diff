@@ -74,7 +74,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({ file, onFileSelect, 
   const borderColor = errorMessage ? 'var(--red)' : file ? color : isDragging ? 'var(--accent)' : 'var(--border-strong)';
 
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       {/* Label row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
