@@ -190,6 +190,14 @@ const es = {
   'report.colDiff': 'Diferencias',
   'report.pagesLabel': '{n} páginas',
   'report.mappingBadge': '{n} pares',
+  // Help menu
+  'help.tooltip': 'Ayuda',
+  'help.reportIssue': 'Notificar un problema',
+  'help.reportSubject': 'Problema en PDF Comparison Tool',
+  'help.reportBody': 'Versión: v{version}\n\nDescripción del problema:\n',
+  'help.privacy': 'Política de privacidad',
+  'privacy.title': 'Política de privacidad',
+  'privacy.close': 'Cerrar',
 } as const;
 
 export type MessageKey = keyof typeof es;
@@ -371,6 +379,14 @@ const en: Record<MessageKey, string> = {
   'report.colDiff': 'Differences',
   'report.pagesLabel': '{n} pages',
   'report.mappingBadge': '{n} pairs',
+  // Help menu
+  'help.tooltip': 'Help',
+  'help.reportIssue': 'Report an issue',
+  'help.reportSubject': 'Issue in PDF Comparison Tool',
+  'help.reportBody': 'Version: v{version}\n\nIssue description:\n',
+  'help.privacy': 'Privacy policy',
+  'privacy.title': 'Privacy policy',
+  'privacy.close': 'Close',
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { es, en };

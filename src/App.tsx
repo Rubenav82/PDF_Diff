@@ -23,6 +23,7 @@ import { buildVisualDiffReportEntries } from './lib/visualReportService';
 import { useT } from './i18n/useT';
 import { useLanguage } from './i18n/LanguageContext';
 import { LanguageSelector } from './components/ui/LanguageSelector';
+import { HelpMenu } from './components/ui/HelpMenu';
 import { AccordionSection } from './components/ui/Accordion';
 
 const CheckSmIcon = () => (
@@ -311,6 +312,7 @@ export default function App() {
           >
             {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
+          <HelpMenu />
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
           <a href="https://www.izertis.com/es/" target='_blank'>
             <LogoIzertis className="h-10 w-auto" />
