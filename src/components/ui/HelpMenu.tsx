@@ -322,6 +322,7 @@ export function HelpMenu() {
           {/* Report issue */}
           <a
             href={emailHref}
+            target='_blank'
             onClick={closeMenu}
             style={menuItemStyle}
             onMouseEnter={e => {
