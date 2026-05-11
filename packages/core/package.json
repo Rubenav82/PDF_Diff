@@ -1,6 +1,6 @@
 {
   "name": "@pdf-diff/core",
-  "version": "0.2.9",
+  "version": "1.0.1",
   "type": "module",
   "files": [
     "dist"
