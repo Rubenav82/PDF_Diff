@@ -317,6 +317,9 @@ export function HelpMenu() {
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
               v{APP_VERSION}
             </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, opacity: 0.75 }}>
+              © 2025 Rubén Asenjo Vega · MIT License
+            </div>
           </div>
 
           {/* Report issue */}
