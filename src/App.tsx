@@ -3,7 +3,7 @@ import { FileUploader } from './components/ui/FileUploader';
 import { ComparisonView } from './components/features/ComparisonView';
 import { Spinner } from './components/ui/Spinner';
 import { DocumentIcon, ArrowPathIcon, MoonIcon, SunIcon } from './components/ui/icons';
-import { LogoIzertis, LogoAbanca } from './components/ui/Logo';
+import { LogoIzertis, LogoAbanca, LogoAqa } from './components/ui/Logo';
 import { getPdfPageCount, extractTextFromPdf, calculateFileHash } from './lib/pdfService';
 import type {
   ComparisonSummary,
@@ -272,9 +272,10 @@ export default function App() {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <a href="https://www.abanca.com/es/" target='_blank' rel="noopener noreferrer" className="flex items-center">
+          {/* <a href="https://www.abanca.com/es/" target='_blank' rel="noopener noreferrer" className="flex items-center">
             <LogoAbanca className="h-8 w-auto" />
-          </a>
+          </a> */}
+          <LogoAqa className="h-10 w-auto" />
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <DocumentIcon style={{ width: 16, height: 16, color: 'var(--text-3)' }} />
@@ -313,10 +314,10 @@ export default function App() {
             {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           <HelpMenu />
-          <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-          <a href="https://www.izertis.com/es/" target='_blank'>
+          {/* <div style={{ width: 1, height: 20, background: 'var(--border)' }} /> */}
+          {/* <a href="https://www.izertis.com/es/" target='_blank'>
             <LogoIzertis className="h-10 w-auto" />
-          </a>
+          </a> */}
         </div>
       </header>
 
@@ -568,6 +569,26 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* ── FOOTER ── */}
+      <footer style={{
+        borderTop: '1px solid var(--border)',
+        padding: '16px 24px',
+        background: 'var(--surface)',
+      }}>
+        <p style={{
+          fontSize: 11,
+          color: 'var(--text-3)',
+          lineHeight: 1.6,
+          maxWidth: 960,
+          margin: '0 auto',
+          textAlign: 'center',
+        }}>
+          {locale === 'es'
+            ? 'Aclaración: El logotipo de AQA (Agile Quality Assurance) presentado en este material es una imagen de referencia conceptual diseñada exclusivamente para el programa de formación interno como parte de la estrategia de calidad. El uso e inclusión de este diseño es de carácter ilustrativo y no constituye ni implica ninguna obligación contractual, afiliación, endoso o asociación con ninguna empresa, entidad legal o marca registrada externa.'
+            : 'Disclaimer: The AQA (Agile Quality Assurance) logo presented in this material is a conceptual reference image designed exclusively for the internal training programme as part of the quality strategy. The use and inclusion of this design is illustrative in nature and does not constitute or imply any contractual obligation, affiliation, endorsement or association with any external company, legal entity or registered trademark.'}
+        </p>
+      </footer>
     </div>
   );
 }
