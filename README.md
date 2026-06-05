@@ -1,5 +1,5 @@
 
-# PDF Diff
+# PDF Diff 
 
 A client-side React app (+ CLI and core library) for comparing two PDF documents via text diff and pixel-level visual diff. All browser processing happens locally — no backend.
 
