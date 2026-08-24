@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['web*']
 
 permissions:
@@ -12,27 +13,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determinar versión y comprobar si ya existe release
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            # Lanzado manualmente con un tag web*: publicar siempre
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(sed -n "s/.*APP_VERSION = '\([^']*\)'.*/\1/p" src/version.ts)
+            TAG="web$VERSION"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+              echo "La versión $VERSION ya tiene release ($TAG); no se publica."
+              echo "release=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "release=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
 
       - uses: actions/setup-node@v4
+        if: steps.version.outputs.release == 'true'
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        if: steps.version.outputs.release == 'true'
         run: npm install
 
       - name: Build
+        if: steps.version.outputs.release == 'true'
         run: npm run build
 
       - name: Crear zips
+        if: steps.version.outputs.release == 'true'
         run: |
-          VERSION=${{ github.ref_name }}
+          VERSION=${{ steps.version.outputs.tag }}
           zip -r pdfComparisonWebTool-$VERSION.zip ./dist
           cp pdfComparisonWebTool-$VERSION.zip pdfComparisonWebTool-latest.zip
 
       - name: Upload release
+        if: steps.version.outputs.release == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
             pdfComparisonWebTool-web*.zip
             pdfComparisonWebTool-latest.zip
