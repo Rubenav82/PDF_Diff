@@ -61,7 +61,7 @@ The SPA depends on the browser APIs directly; `packages/core` is a pure-TS libra
 | [src/lib/visualReportService.ts](src/lib/visualReportService.ts) | Renders page pairs to canvas, runs pixelmatch, produces thumbnails |
 | [src/lib/reportService.ts](src/lib/reportService.ts) | Generates and downloads a self-contained HTML report |
 | [src/types/types.ts](src/types/types.ts) | All shared TypeScript interfaces (`TextDiffResult`, `ComparisonSummary`, `VisualDiffReportEntry`, `PageMapping`) |
-| [src/version.ts](src/version.ts) | `APP_VERSION` constant — **must be bumped manually** when releasing a new SPA version |
+| [src/version.ts](src/version.ts) | `APP_VERSION` constant — **must be bumped (semver) in every PR that changes the SPA**; merging to `main` auto-publishes the release (see *SPA versioning & release*) |
 
 ### Component hierarchy
 
@@ -148,6 +148,19 @@ Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on c
 |----------|---------|--------------|
 | `.github/workflows/cli-tests.yml` | push/PR touching `packages/**` | Matrix (ubuntu + windows), builds core + CLI, runs 21 E2E tests |
 | `.github/workflows/release.yml` | push tag `v*.*.*` | Builds both packages, runs tests, publishes to npm with provenance |
+| `.github/workflows/html-release.yml` | push to `main` (or manual tag `web*`) | If no `web<APP_VERSION>` tag exists yet, builds the SPA, creates the tag and publishes a GitHub Release with `dist/` zips |
+
+### SPA versioning & release
+
+The SPA release is fully automated: on every push/merge to `main`, `html-release.yml` reads `APP_VERSION` from `src/version.ts` and, if the tag `web<APP_VERSION>` does not exist yet, it creates the tag and publishes the GitHub Release (zips of `dist/`). If the version was not bumped, the job exits without publishing — so **the version bump is the release trigger**.
+
+Therefore, **every PR that changes the SPA must bump `APP_VERSION`** following semver:
+
+- **Patch** (`2.0.0` → `2.0.1`): bug fixes, build/config tweaks, no behavior change visible to the user
+- **Minor** (`2.0.0` → `2.1.0`): new features, backwards-compatible (new options, new views, new report content)
+- **Major** (`2.0.0` → `3.0.0`): breaking or disruptive changes (redesigned flow, removed features, changed report format)
+
+Changes that don't touch the SPA (docs, `packages/**`, workflows) must **not** bump `APP_VERSION` — no release will be produced for them.
 
 ### Publishing to npm (via GitHub Actions)
 
