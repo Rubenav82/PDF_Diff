@@ -62,6 +62,7 @@ The SPA depends on the browser APIs directly; `packages/core` is a pure-TS libra
 | [src/lib/reportService.ts](src/lib/reportService.ts) | Generates and downloads a self-contained HTML report |
 | [src/types/types.ts](src/types/types.ts) | All shared TypeScript interfaces (`TextDiffResult`, `ComparisonSummary`, `VisualDiffReportEntry`, `PageMapping`) |
 | [src/version.ts](src/version.ts) | `APP_VERSION` constant — **must be bumped (semver) in every PR that changes the SPA**; merging to `main` auto-publishes the release (see *SPA versioning & release*) |
+| [src/releaseNotes.ts](src/releaseNotes.ts) | `RELEASE_NOTES` array (newest first, ES + EN) shown in *Help → Release notes* — **must get a new entry in every PR that bumps `APP_VERSION`**; `releaseNotes.test.ts` fails if it is out of sync |
 
 ### Component hierarchy
 
@@ -69,7 +70,7 @@ The SPA depends on the browser APIs directly; `packages/core` is a pure-TS libra
 App.tsx
 ├── [header]
 │   ├── LanguageSelector    ← ES/EN switcher
-│   ├── HelpMenu            ← ? button: version, report issue (mailto), privacy policy modal
+│   ├── HelpMenu            ← ? button: version, report issue (mailto), release notes modal, privacy policy modal
 │   └── theme toggle
 ├── FileUploader (×2 — original & modified)
 ├── PageMapper          ← page mapping configuration
@@ -154,13 +155,28 @@ Always publish `@pdf-diff/core` **before** `@pdf-diff/cli`. The CLI depends on c
 
 The SPA release is fully automated: on every push/merge to `main`, `html-release.yml` reads `APP_VERSION` from `src/version.ts` and, if the tag `web<APP_VERSION>` does not exist yet, it creates the tag and publishes the GitHub Release (zips of `dist/`). If the version was not bumped, the job exits without publishing — so **the version bump is the release trigger**.
 
-Therefore, **every PR that changes the SPA must bump `APP_VERSION`** following semver:
+Therefore, **every PR that changes the SPA must bump the version** following semver:
 
 - **Patch** (`2.0.0` → `2.0.1`): bug fixes, build/config tweaks, no behavior change visible to the user
 - **Minor** (`2.0.0` → `2.1.0`): new features, backwards-compatible (new options, new views, new report content)
 - **Major** (`2.0.0` → `3.0.0`): breaking or disruptive changes (redesigned flow, removed features, changed report format)
 
-Changes that don't touch the SPA (docs, `packages/**`, workflows) must **not** bump `APP_VERSION` — no release will be produced for them.
+Changes that don't touch the SPA (docs, `packages/**`, workflows) must **not** bump the version — no release will be produced for them.
+
+#### Version bump checklist (all three, in the same PR)
+
+The version lives in three places that must always agree. `src/releaseNotes.test.ts` fails when they drift, so `npm run test:run` is the gate.
+
+1. **`src/version.ts`** — set `APP_VERSION` to the new version. This is what the workflow reads and what the help menu displays.
+2. **`package.json`** (root) — set `version` to the same value.
+3. **`src/releaseNotes.ts`** — prepend a new `RELEASE_NOTES` entry (newest first) with:
+   - `version`: the same value
+   - `date`: today's date in ISO `YYYY-MM-DD`
+   - `changes.es` / `changes.en`: one bullet per user-visible change, written for the end user (what changed for them, not implementation details). Both languages are mandatory.
+
+The user reads these notes from *Help (?) → Release notes*, so keep them short, concrete and free of internal jargon (no PR numbers, file names or library names).
+
+If a PR adds several changes, group them under one entry for that version; do not create one entry per commit. If the version was already bumped in an earlier unreleased PR (tag `web<APP_VERSION>` does not exist yet), append the new bullets to that existing entry instead of creating another version.
 
 ### Publishing to npm (via GitHub Actions)
 
