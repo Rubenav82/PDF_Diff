@@ -196,8 +196,11 @@ const es = {
   'help.reportSubject': 'Problema en PDF Comparison Tool',
   'help.reportBody': 'Versión: v{version}\n\nDescripción del problema:\n',
   'help.privacy': 'Política de privacidad',
+  'help.releaseNotes': 'Notas de versión',
+  'help.close': 'Cerrar',
   'privacy.title': 'Política de privacidad',
-  'privacy.close': 'Cerrar',
+  'releaseNotes.title': 'Notas de versión',
+  'releaseNotes.current': 'Actual',
 } as const;
 
 export type MessageKey = keyof typeof es;
@@ -385,8 +388,11 @@ const en: Record<MessageKey, string> = {
   'help.reportSubject': 'Issue in PDF Comparison Tool',
   'help.reportBody': 'Version: v{version}\n\nIssue description:\n',
   'help.privacy': 'Privacy policy',
+  'help.releaseNotes': 'Release notes',
+  'help.close': 'Close',
   'privacy.title': 'Privacy policy',
-  'privacy.close': 'Close',
+  'releaseNotes.title': 'Release notes',
+  'releaseNotes.current': 'Latest',
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { es, en };

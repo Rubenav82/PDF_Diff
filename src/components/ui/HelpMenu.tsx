@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useT } from '../../i18n/useT';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { APP_VERSION } from '../../version';
+import { RELEASE_NOTES } from '../../releaseNotes';
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,16 @@ const ShieldIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
     strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const NotesIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="8" y1="13" x2="16" y2="13" />
+    <line x1="8" y1="17" x2="16" y2="17" />
   </svg>
 );
 
@@ -167,7 +178,66 @@ function PrivacyContent({ locale }: { locale: string }) {
   );
 }
 
-function PrivacyModal({ onClose, locale }: { onClose: () => void; locale: string }) {
+// ─── Release notes content ───────────────────────────────────────────────────
+
+function formatReleaseDate(iso: string, locale: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(locale === 'en' ? 'en-GB' : 'es-ES', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+}
+
+function ReleaseNotesContent({ locale }: { locale: 'es' | 'en' }) {
+  const t = useT();
+
+  return (
+    <>
+      {RELEASE_NOTES.map((note, i) => (
+        <div
+          key={note.version}
+          style={{
+            paddingBottom: 18, marginBottom: 18,
+            borderBottom: i < RELEASE_NOTES.length - 1 ? '1px solid var(--border)' : 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              v{note.version}
+            </span>
+            {i === 0 && (
+              <span style={{
+                fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
+                padding: '2px 7px', borderRadius: 999,
+                background: 'var(--accent)', color: '#fff',
+              }}>
+                {t('releaseNotes.current')}
+              </span>
+            )}
+            <span style={{ fontSize: 12, color: 'var(--text-3)', marginLeft: 'auto' }}>
+              {formatReleaseDate(note.date, locale)}
+            </span>
+          </div>
+          <ul style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.7, paddingLeft: 20, margin: 0, listStyle: 'disc' }}>
+            {note.changes[locale].map((change, j) => (
+              <li key={j}>{change}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+// ─── Generic help modal ──────────────────────────────────────────────────────
+
+function HelpModal({
+  title, icon, onClose, children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   const t = useT();
 
   useEffect(() => {
@@ -210,14 +280,14 @@ function PrivacyModal({ onClose, locale }: { onClose: () => void; locale: string
           marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ShieldIcon />
+            {icon}
             <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-              {t('privacy.title')}
+              {title}
             </span>
           </div>
           <button
             onClick={onClose}
-            aria-label={t('privacy.close')}
+            aria-label={t('help.close')}
             style={{
               padding: 5, borderRadius: 6, border: '1px solid var(--border)',
               background: 'var(--surface-2)', color: 'var(--text-3)',
@@ -229,7 +299,7 @@ function PrivacyModal({ onClose, locale }: { onClose: () => void; locale: string
           </button>
         </div>
 
-        <PrivacyContent locale={locale} />
+        {children}
       </div>
     </div>
   );
@@ -249,14 +319,26 @@ const menuItemStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+const hoverIn = (e: React.MouseEvent<HTMLElement>) => {
+  e.currentTarget.style.background = 'var(--surface-2)';
+  e.currentTarget.style.color = 'var(--text)';
+};
+const hoverOut = (e: React.MouseEvent<HTMLElement>) => {
+  e.currentTarget.style.background = 'none';
+  e.currentTarget.style.color = 'var(--text-2)';
+};
+
+type HelpModalKind = 'privacy' | 'releaseNotes' | null;
+
 export function HelpMenu() {
   const t = useT();
   const { locale } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [modal, setModal] = useState<HelpModalKind>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const closeMenu = useCallback(() => setOpen(false), []);
+  const closeModal = useCallback(() => setModal(null), []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -328,32 +410,32 @@ export function HelpMenu() {
             target='_blank'
             onClick={closeMenu}
             style={menuItemStyle}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--text)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = 'none';
-              (e.currentTarget as HTMLElement).style.color = 'var(--text-2)';
-            }}
+            onMouseEnter={hoverIn}
+            onMouseLeave={hoverOut}
           >
             <BugIcon />
             {t('help.reportIssue')}
           </a>
 
+          {/* Release notes */}
+          <button
+            type="button"
+            onClick={() => { setModal('releaseNotes'); closeMenu(); }}
+            style={menuItemStyle}
+            onMouseEnter={hoverIn}
+            onMouseLeave={hoverOut}
+          >
+            <NotesIcon />
+            {t('help.releaseNotes')}
+          </button>
+
           {/* Privacy policy */}
           <button
             type="button"
-            onClick={() => { setPrivacyOpen(true); closeMenu(); }}
+            onClick={() => { setModal('privacy'); closeMenu(); }}
             style={menuItemStyle}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--text)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = 'none';
-              (e.currentTarget as HTMLElement).style.color = 'var(--text-2)';
-            }}
+            onMouseEnter={hoverIn}
+            onMouseLeave={hoverOut}
           >
             <ShieldIcon />
             {t('help.privacy')}
@@ -361,9 +443,16 @@ export function HelpMenu() {
         </div>
       )}
 
-      {/* Privacy modal */}
-      {privacyOpen && (
-        <PrivacyModal onClose={() => setPrivacyOpen(false)} locale={locale} />
+      {modal === 'privacy' && (
+        <HelpModal title={t('privacy.title')} icon={<ShieldIcon />} onClose={closeModal}>
+          <PrivacyContent locale={locale} />
+        </HelpModal>
+      )}
+
+      {modal === 'releaseNotes' && (
+        <HelpModal title={t('releaseNotes.title')} icon={<NotesIcon />} onClose={closeModal}>
+          <ReleaseNotesContent locale={locale} />
+        </HelpModal>
       )}
     </div>
   );
