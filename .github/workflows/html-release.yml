@@ -42,7 +42,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.version.outputs.release == 'true'
-        run: npm install
+        run: npm ci
 
       - name: Build
         if: steps.version.outputs.release == 'true'

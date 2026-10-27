@@ -22,7 +22,7 @@ function makeFile(content = 'hello'): File {
 }
 
 function simulateFileReader(result: ArrayBuffer | null, error = false) {
-  vi.spyOn(global, 'FileReader').mockImplementation(() => {
+  vi.spyOn(global, 'FileReader').mockImplementation(function () {
     const reader = {
       result,
       onload: null as ((e: ProgressEvent<FileReader>) => void) | null,
