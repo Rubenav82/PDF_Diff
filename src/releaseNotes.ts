@@ -19,6 +19,18 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.1.1',
+    date: '2026-11-13',
+    changes: {
+      es: [
+        'Actualización de los componentes internos de la aplicación para mejorar la seguridad y la estabilidad.',
+      ],
+      en: [
+        'Internal application components updated to improve security and stability.',
+      ],
+    },
+  },
+  {
     version: '2.1.0',
     date: '2026-09-10',
     changes: {

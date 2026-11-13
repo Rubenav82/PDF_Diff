@@ -156,6 +156,7 @@ export function renderPageToCanvas(
         }
 
         const renderContext = {
+          canvas,
           canvasContext: context,
           viewport: viewport,
         };

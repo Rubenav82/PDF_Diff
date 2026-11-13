@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@pdf-diff/core': path.resolve(__dirname, 'packages/core/src'),
+      '@pdf-diff/core': path.resolve(import.meta.dirname, 'packages/core/src'),
     },
   },
   test: {
@@ -16,10 +17,5 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: 'es2022',
-    },
   },
 })

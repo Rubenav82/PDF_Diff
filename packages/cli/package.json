@@ -1,6 +1,6 @@
 {
   "name": "@pdf-diff/cli",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "CLI for comparing PDF documents — text + visual diff for CI/CD pipelines",
   "type": "module",
   "author": "Rubén Asenjo Vega",
@@ -23,17 +23,17 @@
     "test": "vitest run --reporter=verbose"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.99",
-    "@pdf-diff/core": "1.0.1",
-    "commander": "^12.1.0",
-    "pdfjs-dist": "^4.10.38"
+    "@napi-rs/canvas": "^1.1.1",
+    "@pdf-diff/core": "2.0.0",
+    "commander": "^15.1.0",
+    "pdfjs-dist": "^6.5.438"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "typescript": "^5.7.3",
-    "vitest": "^4.1.12"
+    "@types/node": "^26.6.6",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13"
   }
 }

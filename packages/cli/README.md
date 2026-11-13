@@ -152,5 +152,5 @@ pdf-diff compare a.pdf b.pdf --ignore-case --ignore-whitespace
 
 ## Requirements
 
-- Node.js ≥ 18
+- Node.js ≥ 22.13
 - Prebuilt native binaries included for Linux x64/arm64, macOS x64/arm64, Windows x64
