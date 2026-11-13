@@ -35,7 +35,7 @@ export async function getPdfPageCountFromBuffer(buffer: Uint8Array): Promise<num
   try {
     return pdf.numPages;
   } finally {
-    void pdf.destroy();
+    void loadingTask.destroy();
   }
 }
 
@@ -60,7 +60,7 @@ export async function extractTextFromBuffer(buffer: Uint8Array): Promise<string[
     }
     return pageTexts;
   } finally {
-    void pdf.destroy();
+    void loadingTask.destroy();
   }
 }
 
@@ -92,6 +92,7 @@ async function renderPageWithPdf(
   ctx2d.fillRect(0, 0, viewport.width, viewport.height);
 
   const renderContext = {
+    canvas,
     canvasContext: ctx as CanvasRenderingContext2D,
     viewport,
   };
@@ -145,13 +146,14 @@ export function renderPageToProvider(
 
     void (async () => {
       try {
-        pdfLoadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
-        const pdf = await pdfLoadingTask.promise;
+        const loadingTask = pdfjsLib.getDocument(docOptions(buffer.slice()));
+        pdfLoadingTask = loadingTask;
+        const pdf = await loadingTask.promise;
         try {
           const result = await renderPageWithPdf(pdf, pageNum, provider, scale);
           safeResolve(result);
         } finally {
-          void pdf.destroy();
+          void loadingTask.destroy();
         }
       } catch (e) {
         safeReject(e);

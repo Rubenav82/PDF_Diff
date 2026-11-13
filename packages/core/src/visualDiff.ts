@@ -229,7 +229,7 @@ export async function buildVisualDiffEntries(
 
     return results;
   } finally {
-    void originalPdf.destroy();
-    void modifiedPdf.destroy();
+    void originalPdf.loadingTask.destroy();
+    void modifiedPdf.loadingTask.destroy();
   }
 }
